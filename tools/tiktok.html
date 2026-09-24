@@ -362,13 +362,6 @@
           <input type="text" id="urlInput" placeholder="https://tiktok.com/@user/video/..." />
         </div>
 
-        <div class="field">
-          <label>Server</label>
-          <select id="serverSelect">
-            <option value="server1">Server 1</option>
-          </select>
-        </div>
-
         <div class="actions">
           <button class="btn" onclick="download()">Unduh Sekarang</button>
           <button class="btn btn-outline" onclick="pasteFromClipboard()">Tempel</button>
@@ -397,9 +390,9 @@
           </div>
 
           <div class="download-btns">
-            <button class="btn btn-green" id="btnNoWm" onclick="openUrl('nowatermark')">No Watermark</button>
-            <button class="btn btn-green" id="btnWm" onclick="openUrl('watermark')">Watermark</button>
-            <button class="btn btn-green" id="btnAudio" onclick="openUrl('audio')">Audio MP3</button>
+            <button class="btn btn-green" onclick="openUrl('nowatermark')">No Watermark</button>
+            <button class="btn btn-green" onclick="openUrl('watermark')">Watermark</button>
+            <button class="btn btn-green" onclick="openUrl('audio')">Audio MP3</button>
             <button class="btn btn-outline" onclick="toggleRaw()">Lihat Raw JSON</button>
           </div>
         </div>
@@ -437,7 +430,6 @@
   async function download() {
     var input = document.getElementById('urlInput');
     var url = normalizeUrl(input.value);
-    var server = document.getElementById('serverSelect').value;
     var loading = document.getElementById('loading');
     var result = document.getElementById('result');
 
@@ -451,15 +443,10 @@
     loading.classList.add('show');
 
     try {
-      var res = await fetch('/api/tiktok?url=' + encodeURIComponent(url) + '&server=' + encodeURIComponent(server));
+      var res = await fetch('/api/tiktok?url=' + encodeURIComponent(url) + '&server=server1');
       var data = await res.json();
 
       console.log('TikTok response:', data);
-
-      // Cek sukses
-      if (!data.success) {
-        throw new Error(data.message || 'Gagal ambil data TikTok');
-      }
 
       tampilkanHasil(data);
 
@@ -485,24 +472,40 @@
     author.textContent = '-';
     duration.textContent = '-';
 
-    // Ambil objek data
-    var d = data.data || data.result || data;
-
-    // Tampilkan raw JSON
+    // DEBUG: tampilkan raw dulu
     document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
 
-    // Info dasar
-    var titleText = d.title || d.desc || d.description || '-';
-    var authorText = d.creator || d.author || d.username || '-';
-    var durationText = d.duration || '-';
+    // Cari objek data di berbagai kemungkinan struktur
+    var d = null;
 
-    title.textContent = titleText;
-    author.textContent = authorText;
-    duration.textContent = durationText;
+    // Cek kalau ada raw yang perlu di-parse
+    if (data.raw && typeof data.raw === 'string') {
+      try {
+        var parsed = JSON.parse(data.raw);
+        data = parsed;
+      } catch (e) {}
+    }
+
+    // Cari objek yang punya field 'links' atau 'title'
+    if (data.data && typeof data.data === 'object') {
+      d = data.data;
+    } else if (data.result && typeof data.result === 'object') {
+      d = data.result;
+    } else if (data.title || data.links) {
+      d = data;
+    } else {
+      d = data;
+    }
+
+    console.log('Parsed d:', d);
+
+    // Info dasar
+    title.textContent = d.title || d.desc || d.description || '-';
+    author.textContent = d.creator || d.author || d.username || '-';
+    duration.textContent = d.duration || '-';
 
     // Preview cover
     var coverUrl = d.cover || d.thumbnail || '';
-
     if (coverUrl) {
       var img = document.createElement('img');
       img.src = coverUrl;
@@ -515,36 +518,25 @@
       preview.innerHTML = '<div style="color:#fff;font-size:12px;text-align:center;padding:20px;">Preview tidak tersedia</div>';
     }
 
-    // Ambil links — dari data.data.links
+    // Links
     var links = d.links || {};
 
     currentLinks = {
-      nowatermark: links.nowatermark || links.no_watermark || links.nowm || d.no_watermark || '',
+      nowatermark: links.nowatermark || links.no_watermark || links.nowm || d.no_watermark || d.play || '',
       watermark: links.watermark || links.wm || d.watermark || '',
       audio: links.audio || links.music || d.audio || d.music || ''
     };
 
-    // Update tombol
-    ['btnNoWm', 'btnWm', 'btnAudio'].forEach(function(id) {
-      var btn = document.getElementById(id);
-      var key = id === 'btnNoWm' ? 'nowatermark' : id === 'btnWm' ? 'watermark' : 'audio';
-      if (!currentLinks[key]) {
-        btn.style.opacity = '.4';
-        btn.style.pointerEvents = 'none';
-      } else {
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      }
-    });
+    console.log('Current links:', currentLinks);
   }
 
   function openUrl(tipe) {
     var url = currentLinks[tipe];
     if (!url) {
-      showToast('Link tidak tersedia');
+      showToast('Link ' + tipe + ' tidak tersedia');
       return;
     }
-    showToast('Membuka link download...');
+    showToast('Membuka download...');
     window.open(url, '_blank');
   }
 
