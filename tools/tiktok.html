@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TikTok Downloader - ToolsAriel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter','Segoe UI',sans-serif; }
+
+  html, body {
+    min-height:100vh;
+    background:#000;
+    color:#000;
+    overflow-x:hidden;
+  }
+
+  .bg-video {
+    position:fixed; top:0; left:0;
+    width:100vw; height:100vh;
+    object-fit:cover;
+    z-index:0;
+    pointer-events:none;
+    filter: blur(8px) saturate(140%);
+    transform: scale(1.08);
+  }
+  .bg-overlay {
+    position:fixed; top:0; left:0;
+    width:100vw; height:100vh;
+    background:rgba(0,0,0,.4);
+    z-index:1;
+    pointer-events:none;
+  }
+
+  .app { position:relative; z-index:10; min-height:100vh; padding:24px; }
+
+  .navbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 22px;
+    background:rgba(255,255,255,.85);
+    border:3px solid #000;
+    box-shadow:5px 5px 0 #dc2626;
+    margin-bottom:24px;
+  }
+
+  .nav-logo { display:flex; align-items:center; gap:10px; }
+  .nav-logo svg {
+    width:36px; height:36px;
+    animation: logoSpin 8s linear infinite;
+    filter:drop-shadow(2px 2px 0 #000);
+  }
+  @keyframes logoSpin {
+    0% { transform:rotate(0deg); }
+    100% { transform:rotate(360deg); }
+  }
+  .nav-logo .brand-text {
+    font-size:14px; font-weight:900; letter-spacing:3px;
+    text-transform:uppercase; color:#000;
+  }
+  .nav-logo .brand-text span {
+    color:#dc2626; text-shadow:1.5px 1.5px 0 #000;
+  }
+
+  .back-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:9px 16px;
+    background:#fff; border:3px solid #000;
+    font-size:11px; font-weight:900;
+    letter-spacing:1.5px; text-transform:uppercase;
+    cursor:pointer; box-shadow:3px 3px 0 #000;
+    transition:.15s;
+    color:#000;
+    text-decoration:none;
+  }
+  .back-btn:hover {
+    transform:translate(-2px,-2px);
+    box-shadow:5px 5px 0 #000;
+    background:#fef2f2;
+  }
+  .back-btn svg { width:14px; height:14px; fill:#000; }
+
+  .container { max-width:900px; margin:0 auto; }
+
+  .page-title {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:20px;
+  }
+  .page-title .line {
+    flex:1; height:4px;
+    background:#dc2626;
+    border-top:2px solid #000; border-bottom:2px solid #000;
+  }
+  .page-title .text {
+    font-size:13px; font-weight:900;
+    letter-spacing:3px; text-transform:uppercase;
+    color:#fff; text-shadow:2px 2px 0 #000;
+    background:#dc2626;
+    padding:7px 16px;
+    border:3px solid #000;
+    box-shadow:4px 4px 0 #000;
+    white-space:nowrap;
+  }
+
+  .panel {
+    background:rgba(255,255,255,.55);
+    border:4px solid #dc2626;
+    padding:22px;
+    box-shadow:8px 8px 0 #dc2626, 16px 16px 0 #000;
+    position:relative;
+    margin-bottom:22px;
+  }
+  .panel::before {
+    content:'';
+    position:absolute; inset:8px;
+    border:2px solid #dc2626;
+    pointer-events:none; opacity:.4;
+  }
+
+  .field { margin-bottom:14px; position:relative; z-index:2; }
+  .field label {
+    display:block;
+    font-size:10.5px; font-weight:900;
+    color:#000; letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .field input, .field select {
+    width:100%;
+    padding:14px 16px;
+    border:3px solid #000;
+    font-size:13.5px; font-weight:600;
+    color:#000; outline:none;
+    background:#fff;
+    transition:.2s;
+    font-family:inherit;
+  }
+  .field input::placeholder { color:#999; }
+  .field input:focus, .field select:focus {
+    border-color:#dc2626;
+    background:#fff8f8;
+    box-shadow:4px 4px 0 #000;
+    transform:translate(-2px,-2px);
+  }
+
+  .actions {
+    display:flex; gap:10px;
+    flex-wrap:wrap;
+    position:relative; z-index:2;
+  }
+
+  .btn {
+    padding:12px 20px;
+    border:3px solid #000;
+    background:#dc2626; color:#fff;
+    font-size:12px; font-weight:900;
+    letter-spacing:1.5px; text-transform:uppercase;
+    cursor:pointer;
+    box-shadow:4px 4px 0 #000;
+    transition:.15s;
+    font-family:inherit;
+  }
+  .btn:hover {
+    background:#b91c1c;
+    transform:translate(-2px,-2px);
+    box-shadow:6px 6px 0 #000;
+  }
+  .btn:active {
+    transform:translate(2px,2px);
+    box-shadow:2px 2px 0 #000;
+  }
+  .btn.btn-outline { background:#fff; color:#000; }
+  .btn.btn-outline:hover { background:#f3f4f6; }
+  .btn.btn-green { background:#22c55e; }
+  .btn.btn-green:hover { background:#16a34a; }
+
+  .loading {
+    display:none;
+    text-align:center;
+    padding:30px;
+    color:#fff;
+    font-weight:900;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    font-size:13px;
+  }
+  .loading.show { display:block; }
+  .loading::after {
+    content:'';
+    display:inline-block;
+    width:20px; height:20px;
+    margin-left:12px;
+    border:3px solid #dc2626;
+    border-top-color:#fff;
+    border-radius:50%;
+    animation: spin 1s linear infinite;
+    vertical-align:middle;
+  }
+  @keyframes spin {
+    0% { transform:rotate(0deg); }
+    100% { transform:rotate(360deg); }
+  }
+
+  .result { display:none; }
+  .result.show { display:block; animation: pageIn .4s ease; }
+  @keyframes pageIn {
+    from { opacity:0; transform:translateY(15px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  .result-card {
+    background:rgba(255,255,255,.55);
+    border:4px solid #dc2626;
+    padding:20px;
+    box-shadow:8px 8px 0 #dc2626, 16px 16px 0 #000;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .result-card::before {
+    content:'';
+    position:absolute; inset:8px;
+    border:2px solid #dc2626;
+    pointer-events:none; opacity:.4;
+  }
+
+  .video-preview {
+    width:100%;
+    max-width:400px;
+    aspect-ratio:9/16;
+    background:#000;
+    border:3px solid #000;
+    box-shadow:5px 5px 0 #dc2626;
+    margin:0 auto 18px;
+    overflow:hidden;
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .video-preview video,
+  .video-preview img {
+    width:100%; height:100%;
+    object-fit:contain;
+    display:block;
+  }
+
+  .info-row {
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:2px dashed #000;
+    position:relative; z-index:2;
+  }
+  .info-row:last-child { border-bottom:none; }
+  .info-label {
+    font-size:10.5px; font-weight:900;
+    letter-spacing:1.5px; text-transform:uppercase;
+    color:#666;
+    min-width:90px;
+    padding-top:2px;
+  }
+  .info-value {
+    font-size:13px; font-weight:700;
+    color:#000;
+    word-break:break-word;
+    flex:1;
+  }
+
+  .download-btns {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:18px;
+    position:relative; z-index:2;
+  }
+
+  .toast {
+    position:fixed;
+    top:20px; left:50%;
+    transform:translateX(-50%) translateY(-120px);
+    background:#000; color:#fff;
+    padding:12px 20px;
+    border:3px solid #dc2626;
+    box-shadow:5px 5px 0 #dc2626;
+    font-size:11.5px; font-weight:900;
+    letter-spacing:1px; text-transform:uppercase;
+    z-index:9999;
+    transition:transform .4s cubic-bezier(.3,1.3,.5,1);
+    max-width:90vw; text-align:center;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  .raw-box {
+    background:#0a0a0a;
+    border:4px solid #dc2626;
+    box-shadow:8px 8px 0 #000;
+    padding:16px;
+    max-height:400px;
+    overflow:auto;
+    margin-top:16px;
+    display:none;
+  }
+  .raw-box.show { display:block; }
+  .raw-box pre {
+    color:#38bdf8;
+    font-family:'Consolas','Monaco',monospace;
+    font-size:11px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+
+  @media (max-width:600px){
+    .nav-logo .brand-text { font-size:12px; letter-spacing:2px; }
+    .panel, .result-card { padding:16px; box-shadow:6px 6px 0 #dc2626, 12px 12px 0 #000; }
+    .page-title .text { font-size:11px; letter-spacing:2px; padding:6px 12px; }
+    .btn { padding:11px 14px; font-size:11px; }
+    .download-btns { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="../media/background.mp4" type="video/mp4" />
+  </video>
+  <div class="bg-overlay"></div>
+
+  <div class="app">
+
+    <nav class="navbar">
+      <div class="nav-logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" fill="#dc2626" stroke="#000" stroke-width="6"/>
+          <rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+          <rect x="24" y="26" width="22" height="6" fill="#000"/>
+          <rect x="32" y="26" width="6" height="34" fill="#000"/>
+          <path d="M54 60 L64 26 L74 60 L68 60 L66 52 L62 52 L60 60 Z M63 46 L65 46 L64 40 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/>
+        </svg>
+        <div class="brand-text">TOOLS <span>ARIEL</span></div>
+      </div>
+      <a class="back-btn" href="../dashboard.html">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+        Kembali
+      </a>
+    </nav>
+
+    <div class="container">
+
+      <div class="page-title">
+        <div class="line"></div>
+        <div class="text">TikTok Downloader</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="panel">
+        <div class="field">
+          <label>Link TikTok</label>
+          <input type="text" id="urlInput" placeholder="https://tiktok.com/@user/video/..." />
+        </div>
+
+        <div class="field">
+          <label>Server</label>
+          <select id="serverSelect">
+            <option value="server1">Server 1</option>
+            <option value="server2">Server 2</option>
+            <option value="server3">Server 3</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button class="btn" onclick="download()">Unduh Sekarang</button>
+          <button class="btn btn-outline" onclick="pasteFromClipboard()">Tempel</button>
+          <button class="btn btn-outline" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">Mengambil data TikTok</div>
+
+      <div class="result" id="result">
+
+        <div class="result-card">
+          <div class="video-preview" id="videoPreview"></div>
+
+          <div class="info-row">
+            <div class="info-label">Judul</div>
+            <div class="info-value" id="infoTitle">-</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Author</div>
+            <div class="info-value" id="infoAuthor">-</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Durasi</div>
+            <div class="info-value" id="infoDuration">-</div>
+          </div>
+
+          <div class="download-btns">
+            <button class="btn btn-green" id="btnNoWm" onclick="openUrl('noWm')">No Watermark</button>
+            <button class="btn btn-green" id="btnWm" onclick="openUrl('wm')">Watermark</button>
+            <button class="btn btn-green" id="btnAudio" onclick="openUrl('audio')">Audio MP3</button>
+            <button class="btn btn-outline" onclick="toggleRaw()">Lihat Raw JSON</button>
+          </div>
+        </div>
+
+        <div class="raw-box" id="rawBox">
+          <pre id="rawContent"></pre>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast">-</div>
+
+<script>
+  var currentData = null;
+
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  function normalizeUrl(url) {
+    url = url.trim();
+    if (!url) return '';
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    return url;
+  }
+
+  async function download() {
+    var input = document.getElementById('urlInput');
+    var url = normalizeUrl(input.value);
+    var server = document.getElementById('serverSelect').value;
+    var loading = document.getElementById('loading');
+    var result = document.getElementById('result');
+
+    if (!url) {
+      showToast('Masukkan link TikTok dulu!');
+      input.focus();
+      return;
+    }
+
+    result.classList.remove('show');
+    loading.classList.add('show');
+
+    try {
+      var res = await fetch('/api/tiktok?url=' + encodeURIComponent(url) + '&server=' + encodeURIComponent(server));
+      var data = await res.json();
+
+      console.log('Response:', data);
+
+      currentData = data;
+      tampilkanHasil(data);
+
+      loading.classList.remove('show');
+      result.classList.add('show');
+      showToast('Data berhasil diambil!');
+
+    } catch (err) {
+      loading.classList.remove('show');
+      showToast('Gagal: ' + err.message);
+      console.error(err);
+    }
+  }
+
+  function tampilkanHasil(data) {
+    var preview = document.getElementById('videoPreview');
+    var title = document.getElementById('infoTitle');
+    var author = document.getElementById('infoAuthor');
+    var duration = document.getElementById('infoDuration');
+
+    preview.innerHTML = '';
+    title.textContent = '-';
+    author.textContent = '-';
+    duration.textContent = '-';
+
+    var d = data.data || data.result || data;
+
+    document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
+
+    var titleText = d.title || d.desc || d.description || '-';
+    var authorText = (d.author && d.author.nickname) || (d.author && d.author.unique_id) || d.username || d.author || '-';
+    var durationText = d.duration ? d.duration + ' detik' : '-';
+
+    title.textContent = titleText;
+    author.textContent = authorText;
+    duration.textContent = durationText;
+
+    var coverUrl = d.cover || d.thumbnail || d.origin_cover || d.coverUrl || '';
+
+    if (coverUrl) {
+      var img = document.createElement('img');
+      img.src = coverUrl;
+      img.alt = 'Cover';
+      img.onerror = function() {
+        preview.innerHTML = '<div style="color:#fff;font-size:12px;text-align:center;padding:20px;">Cover tidak tersedia</div>';
+      };
+      preview.appendChild(img);
+    } else {
+      preview.innerHTML = '<div style="color:#fff;font-size:12px;text-align:center;padding:20px;">Preview tidak tersedia</div>';
+    }
+
+    var noWm = d.no_watermark || d.play || d.video || d.videoUrl || d.nowm || '';
+    var wm = d.watermark || d.wm || d.play_wm || '';
+    var audio = d.music || d.audio || d.musicUrl || d.audioUrl || '';
+
+    document.getElementById('btnNoWm').dataset.url = noWm;
+    document.getElementById('btnWm').dataset.url = wm;
+    document.getElementById('btnAudio').dataset.url = audio;
+
+    ['btnNoWm', 'btnWm', 'btnAudio'].forEach(function(id) {
+      var btn = document.getElementById(id);
+      if (!btn.dataset.url) {
+        btn.style.opacity = '.4';
+        btn.style.pointerEvents = 'none';
+      } else {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    });
+  }
+
+  function openUrl(tipe) {
+    var btn;
+    if (tipe === 'noWm') btn = document.getElementById('btnNoWm');
+    else if (tipe === 'wm') btn = document.getElementById('btnWm');
+    else btn = document.getElementById('btnAudio');
+
+    var url = btn.dataset.url;
+    if (!url) {
+      showToast('Link tidak tersedia');
+      return;
+    }
+    window.open(url, '_blank');
+  }
+
+  function toggleRaw() {
+    var box = document.getElementById('rawBox');
+    box.classList.toggle('show');
+  }
+
+  function pasteFromClipboard() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(function(text) {
+        document.getElementById('urlInput').value = text;
+        showToast('Link berhasil ditempel!');
+      }).catch(function() {
+        showToast('Gagal akses clipboard.');
+      });
+    } else {
+      showToast('Browser gak support.');
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('urlInput').value = '';
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('rawBox').classList.remove('show');
+    currentData = null;
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') download();
+  });
+</script>
+
+</body>
+</html>
