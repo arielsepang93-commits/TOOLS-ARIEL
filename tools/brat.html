@@ -157,6 +157,9 @@
     box-shadow:4px 4px 0 #000;
     transition:.15s;
     font-family:inherit;
+    text-decoration:none;
+    display:inline-block;
+    text-align:center;
   }
   .btn:hover {
     background:#b91c1c;
@@ -270,7 +273,7 @@
     border:4px solid #dc2626;
     box-shadow:8px 8px 0 #000;
     padding:16px;
-    max-height:300px;
+    max-height:400px;
     overflow:auto;
     margin-top:16px;
     display:none;
@@ -391,41 +394,40 @@
       var res = await fetch('/api/brat?text=' + encodeURIComponent(text));
       var contentType = res.headers.get('content-type') || '';
 
-      var imageUrl;
-
-      if (contentType.startsWith('image/')) {
-        // Response langsung gambar
-        var blob = await res.blob();
-        imageUrl = URL.createObjectURL(blob);
-        document.getElementById('rawContent').textContent = 'Response: Image (' + blob.size + ' bytes)';
-      } else {
-        // Response JSON
-        var data = await res.json();
-        document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
-        imageUrl = data.result || data.url || data.image || (data.data && data.data.url);
-
-        if (!imageUrl) {
-          throw new Error('URL gambar tidak ditemukan di response');
-        }
-      }
-
       var preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
-      var img = document.createElement('img');
-      img.src = imageUrl;
-      img.alt = 'Brat';
-      img.onerror = function() {
-        preview.innerHTML = '<div style="color:#dc2626;font-size:12px;text-align:center;padding:20px;">Gagal load gambar</div>';
-      };
-      preview.appendChild(img);
+      document.getElementById('rawContent').textContent = '';
 
-      var dlBtn = document.getElementById('btnDownload');
-      dlBtn.href = imageUrl;
-      dlBtn.download = 'brat-' + Date.now() + '.png';
+      // Kalau response gambar → pakai blob URL
+      if (contentType.startsWith('image/')) {
+        var blob = await res.blob();
+        var blobUrl = URL.createObjectURL(blob);
+
+        var img = document.createElement('img');
+        img.src = blobUrl;
+        img.alt = 'Brat';
+        preview.appendChild(img);
+
+        var dlBtn = document.getElementById('btnDownload');
+        dlBtn.href = blobUrl;
+        dlBtn.download = 'brat-' + Date.now() + '.png';
+
+        document.getElementById('rawContent').textContent = 'Response: Image (' + blob.size + ' bytes)';
+        showToast('Gambar berhasil dibuat!');
+
+      } else {
+        // Response JSON — dump raw biar keliatan isinya
+        var data = await res.json();
+        document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
+
+        preview.innerHTML = '<div style="color:#dc2626;font-size:12px;text-align:center;padding:20px;font-weight:900;">Response bukan gambar. Cek RAW di bawah.</div>';
+        document.getElementById('rawBox').classList.add('show');
+
+        showToast('Response bukan gambar, cek RAW');
+      }
 
       loading.classList.remove('show');
       result.classList.add('show');
-      showToast('Gambar berhasil dibuat!');
 
     } catch (err) {
       loading.classList.remove('show');
