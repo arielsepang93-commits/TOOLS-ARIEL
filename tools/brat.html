@@ -398,17 +398,27 @@
 
       document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
 
+      // Kalau data di-wrap di dalam "raw" — parse dulu
+      var actual = data;
+      if (data.raw && typeof data.raw === 'string') {
+        try {
+          actual = JSON.parse(data.raw);
+        } catch (e) {
+          // biarin pakai data asli
+        }
+      }
+
       // Ambil URL gambar dari data.data.image
       var imageUrl = '';
 
-      if (data && data.data && data.data.image) {
-        imageUrl = data.data.image;
-      } else if (data && data.result) {
-        imageUrl = data.result;
-      } else if (data && data.url) {
-        imageUrl = data.url;
-      } else if (data && data.image) {
-        imageUrl = data.image;
+      if (actual && actual.data && actual.data.image) {
+        imageUrl = actual.data.image;
+      } else if (actual && actual.image) {
+        imageUrl = actual.image;
+      } else if (actual && actual.result) {
+        imageUrl = actual.result;
+      } else if (actual && actual.url) {
+        imageUrl = actual.url;
       }
 
       if (!imageUrl) {
@@ -421,7 +431,6 @@
       var img = document.createElement('img');
       img.src = imageUrl;
       img.alt = 'Brat';
-      img.crossOrigin = 'anonymous';
       img.onerror = function() {
         preview.innerHTML = '<div style="color:#dc2626;font-size:12px;text-align:center;padding:20px;font-weight:900;">Gagal load gambar dari CDN</div>';
       };
