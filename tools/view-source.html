@@ -358,66 +358,31 @@
     infoText.textContent = '';
     loading.classList.add('show');
 
-    // Deteksi lingkungan
-    var host = window.location.hostname;
-    var isVercel = host.includes('vercel.app') ||
-                   (!host.includes('localhost') &&
-                    !host.includes('127.0.0.1') &&
-                    !/^192\.168\./.test(host) &&
-                    window.location.protocol === 'https:');
+    try {
+      var res = await fetch('/api/fetch?url=' + encodeURIComponent(url));
+      var data = await res.json();
 
-    // Susun daftar endpoint
-    var endpoints = [];
-
-    if (isVercel) {
-      endpoints.push('/api/proxy?url=' + encodeURIComponent(url));
-    }
-
-    // Fallback CORS proxy publik (dipakai kalau di lokal / Vercel gagal)
-    endpoints.push('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
-    endpoints.push('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url));
-    endpoints.push('https://corsproxy.io/?' + encodeURIComponent(url));
-
-    var berhasil = false;
-    var lastError = 'Semua proxy gagal';
-
-    for (var i = 0; i < endpoints.length; i++) {
-      try {
-        var res = await fetch(endpoints[i]);
-
-        if (!res.ok) {
-          lastError = 'Status ' + res.status;
-          continue;
-        }
-
-        var html = await res.text();
-
-        if (html && html.length > 50) {
-          currentSource = html;
-          codeContent.textContent = html;
-
-          var sizeKB = (html.length / 1024).toFixed(2);
-          var lineCount = html.split('\n').length;
-          infoText.textContent = 'Berhasil • ' + sizeKB + ' KB • ' + lineCount + ' baris';
-          infoText.style.color = '#22c55e';
-
-          codeBox.classList.add('show');
-          loading.classList.remove('show');
-          showToast('Source code berhasil diambil!');
-          berhasil = true;
-          break;
-        }
-      } catch (err) {
-        lastError = err.message;
-        console.log('Endpoint ' + (i + 1) + ' gagal: ' + err.message);
+      if (!data.success) {
+        throw new Error(data.message || 'Gagal ambil website');
       }
-    }
 
-    if (!berhasil) {
+      currentSource = data.html;
+      codeContent.textContent = data.html;
+
+      var sizeKB = (data.html.length / 1024).toFixed(2);
+      var lineCount = data.html.split('\n').length;
+      infoText.textContent = 'Berhasil • ' + sizeKB + ' KB • ' + lineCount + ' baris';
+      infoText.style.color = '#22c55e';
+
+      codeBox.classList.add('show');
       loading.classList.remove('show');
-      infoText.textContent = 'Gagal: ' + lastError;
+      showToast('Source code berhasil diambil!');
+
+    } catch (err) {
+      loading.classList.remove('show');
+      infoText.textContent = '❌ ' + err.message;
       infoText.style.color = '#dc2626';
-      showToast('Gagal ambil source code');
+      showToast('Gagal: ' + err.message);
     }
   }
 
