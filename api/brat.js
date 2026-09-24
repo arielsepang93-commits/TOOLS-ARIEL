@@ -35,13 +35,19 @@ export default async function handler(req, res) {
             return res.status(200).send(Buffer.from(buffer));
         }
 
-        // Kalau JSON atau teks — return raw biar frontend bisa lihat
+        // Kalau JSON — parse dan return langsung
         const text_response = await response.text();
-        return res.status(response.status).json({
-            success: response.ok,
-            contentType: contentType,
-            raw: text_response
-        });
+
+        try {
+            const parsed = JSON.parse(text_response);
+            return res.status(response.status).json(parsed);
+        } catch (e) {
+            return res.status(response.status).json({
+                success: false,
+                message: "Response bukan JSON valid",
+                raw: text_response
+            });
+        }
 
     } catch (error) {
         console.error("Brat error:", error);
