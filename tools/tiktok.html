@@ -157,6 +157,9 @@
     box-shadow:4px 4px 0 #000;
     transition:.15s;
     font-family:inherit;
+    text-decoration:none;
+    display:inline-block;
+    text-align:center;
   }
   .btn:hover {
     background:#b91c1c;
@@ -169,7 +172,7 @@
   }
   .btn.btn-outline { background:#fff; color:#000; }
   .btn.btn-outline:hover { background:#f3f4f6; }
-  .btn.btn-green { background:#22c55e; }
+  .btn.btn-green { background:#22c55e; color:#fff; }
   .btn.btn-green:hover { background:#16a34a; }
 
   .loading {
@@ -363,8 +366,6 @@
           <label>Server</label>
           <select id="serverSelect">
             <option value="server1">Server 1</option>
-            <option value="server2">Server 2</option>
-            <option value="server3">Server 3</option>
           </select>
         </div>
 
@@ -396,8 +397,8 @@
           </div>
 
           <div class="download-btns">
-            <button class="btn btn-green" id="btnNoWm" onclick="openUrl('noWm')">No Watermark</button>
-            <button class="btn btn-green" id="btnWm" onclick="openUrl('wm')">Watermark</button>
+            <button class="btn btn-green" id="btnNoWm" onclick="openUrl('nowatermark')">No Watermark</button>
+            <button class="btn btn-green" id="btnWm" onclick="openUrl('watermark')">Watermark</button>
             <button class="btn btn-green" id="btnAudio" onclick="openUrl('audio')">Audio MP3</button>
             <button class="btn btn-outline" onclick="toggleRaw()">Lihat Raw JSON</button>
           </div>
@@ -415,7 +416,7 @@
   <div class="toast" id="toast">-</div>
 
 <script>
-  var currentData = null;
+  var currentLinks = {};
 
   var toastTimer = null;
   function showToast(msg) {
@@ -453,9 +454,13 @@
       var res = await fetch('/api/tiktok?url=' + encodeURIComponent(url) + '&server=' + encodeURIComponent(server));
       var data = await res.json();
 
-      console.log('Response:', data);
+      console.log('TikTok response:', data);
 
-      currentData = data;
+      // Cek sukses
+      if (!data.success) {
+        throw new Error(data.message || 'Gagal ambil data TikTok');
+      }
+
       tampilkanHasil(data);
 
       loading.classList.remove('show');
@@ -480,19 +485,23 @@
     author.textContent = '-';
     duration.textContent = '-';
 
+    // Ambil objek data
     var d = data.data || data.result || data;
 
+    // Tampilkan raw JSON
     document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
 
+    // Info dasar
     var titleText = d.title || d.desc || d.description || '-';
-    var authorText = (d.author && d.author.nickname) || (d.author && d.author.unique_id) || d.username || d.author || '-';
-    var durationText = d.duration ? d.duration + ' detik' : '-';
+    var authorText = d.creator || d.author || d.username || '-';
+    var durationText = d.duration || '-';
 
     title.textContent = titleText;
     author.textContent = authorText;
     duration.textContent = durationText;
 
-    var coverUrl = d.cover || d.thumbnail || d.origin_cover || d.coverUrl || '';
+    // Preview cover
+    var coverUrl = d.cover || d.thumbnail || '';
 
     if (coverUrl) {
       var img = document.createElement('img');
@@ -506,17 +515,20 @@
       preview.innerHTML = '<div style="color:#fff;font-size:12px;text-align:center;padding:20px;">Preview tidak tersedia</div>';
     }
 
-    var noWm = d.no_watermark || d.play || d.video || d.videoUrl || d.nowm || '';
-    var wm = d.watermark || d.wm || d.play_wm || '';
-    var audio = d.music || d.audio || d.musicUrl || d.audioUrl || '';
+    // Ambil links — dari data.data.links
+    var links = d.links || {};
 
-    document.getElementById('btnNoWm').dataset.url = noWm;
-    document.getElementById('btnWm').dataset.url = wm;
-    document.getElementById('btnAudio').dataset.url = audio;
+    currentLinks = {
+      nowatermark: links.nowatermark || links.no_watermark || links.nowm || d.no_watermark || '',
+      watermark: links.watermark || links.wm || d.watermark || '',
+      audio: links.audio || links.music || d.audio || d.music || ''
+    };
 
+    // Update tombol
     ['btnNoWm', 'btnWm', 'btnAudio'].forEach(function(id) {
       var btn = document.getElementById(id);
-      if (!btn.dataset.url) {
+      var key = id === 'btnNoWm' ? 'nowatermark' : id === 'btnWm' ? 'watermark' : 'audio';
+      if (!currentLinks[key]) {
         btn.style.opacity = '.4';
         btn.style.pointerEvents = 'none';
       } else {
@@ -527,16 +539,12 @@
   }
 
   function openUrl(tipe) {
-    var btn;
-    if (tipe === 'noWm') btn = document.getElementById('btnNoWm');
-    else if (tipe === 'wm') btn = document.getElementById('btnWm');
-    else btn = document.getElementById('btnAudio');
-
-    var url = btn.dataset.url;
+    var url = currentLinks[tipe];
     if (!url) {
       showToast('Link tidak tersedia');
       return;
     }
+    showToast('Membuka link download...');
     window.open(url, '_blank');
   }
 
@@ -562,7 +570,7 @@
     document.getElementById('urlInput').value = '';
     document.getElementById('result').classList.remove('show');
     document.getElementById('rawBox').classList.remove('show');
-    currentData = null;
+    currentLinks = {};
   }
 
   document.getElementById('urlInput').addEventListener('keydown', function(e) {
