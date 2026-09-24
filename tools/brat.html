@@ -392,45 +392,53 @@
 
     try {
       var res = await fetch('/api/brat?text=' + encodeURIComponent(text));
-      var contentType = res.headers.get('content-type') || '';
+      var data = await res.json();
+
+      console.log('Brat response:', data);
+
+      document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
+
+      // Ambil URL gambar dari data.data.image
+      var imageUrl = '';
+
+      if (data && data.data && data.data.image) {
+        imageUrl = data.data.image;
+      } else if (data && data.result) {
+        imageUrl = data.result;
+      } else if (data && data.url) {
+        imageUrl = data.url;
+      } else if (data && data.image) {
+        imageUrl = data.image;
+      }
+
+      if (!imageUrl) {
+        throw new Error('URL gambar tidak ditemukan di response');
+      }
 
       var preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
-      document.getElementById('rawContent').textContent = '';
 
-      // Kalau response gambar → pakai blob URL
-      if (contentType.startsWith('image/')) {
-        var blob = await res.blob();
-        var blobUrl = URL.createObjectURL(blob);
+      var img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'Brat';
+      img.crossOrigin = 'anonymous';
+      img.onerror = function() {
+        preview.innerHTML = '<div style="color:#dc2626;font-size:12px;text-align:center;padding:20px;font-weight:900;">Gagal load gambar dari CDN</div>';
+      };
+      preview.appendChild(img);
 
-        var img = document.createElement('img');
-        img.src = blobUrl;
-        img.alt = 'Brat';
-        preview.appendChild(img);
-
-        var dlBtn = document.getElementById('btnDownload');
-        dlBtn.href = blobUrl;
-        dlBtn.download = 'brat-' + Date.now() + '.png';
-
-        document.getElementById('rawContent').textContent = 'Response: Image (' + blob.size + ' bytes)';
-        showToast('Gambar berhasil dibuat!');
-
-      } else {
-        // Response JSON — dump raw biar keliatan isinya
-        var data = await res.json();
-        document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
-
-        preview.innerHTML = '<div style="color:#dc2626;font-size:12px;text-align:center;padding:20px;font-weight:900;">Response bukan gambar. Cek RAW di bawah.</div>';
-        document.getElementById('rawBox').classList.add('show');
-
-        showToast('Response bukan gambar, cek RAW');
-      }
+      var dlBtn = document.getElementById('btnDownload');
+      dlBtn.href = imageUrl;
+      dlBtn.download = 'brat-' + Date.now() + '.png';
 
       loading.classList.remove('show');
       result.classList.add('show');
+      showToast('Gambar berhasil dibuat!');
 
     } catch (err) {
       loading.classList.remove('show');
+      document.getElementById('result').classList.add('show');
+      document.getElementById('rawBox').classList.add('show');
       showToast('Gagal: ' + err.message);
       console.error(err);
     }
