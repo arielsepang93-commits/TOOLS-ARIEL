@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spotify Downloader - ToolsAriel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter','Segoe UI',sans-serif; }
+  html, body { min-height:100vh; background:#000; color:#000; overflow-x:hidden; }
+  .bg-video { position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:0; pointer-events:none; filter: blur(8px) saturate(140%); transform: scale(1.08); }
+  .bg-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.5); z-index:1; pointer-events:none; }
+  .app { position:relative; z-index:10; min-height:100vh; padding:24px; }
+  .navbar { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; background:rgba(255,255,255,.9); border:3px solid #000; box-shadow:5px 5px 0 #22c55e; margin-bottom:24px; }
+  .nav-logo { display:flex; align-items:center; gap:10px; }
+  .nav-logo svg { width:36px; height:36px; filter:drop-shadow(2px 2px 0 #000); }
+  .nav-logo .brand-text { font-size:14px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:#000; }
+  .nav-logo .brand-text span { color:#22c55e; text-shadow:1.5px 1.5px 0 #000; }
+  .back-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; background:#fff; border:3px solid #000; font-size:11px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 #000; transition:.15s; color:#000; text-decoration:none; }
+  .back-btn:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 #000; background:#f0fdf4; }
+  .back-btn svg { width:14px; height:14px; fill:#000; }
+  .container { max-width:800px; margin:0 auto; }
+  .page-title { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .page-title .line { flex:1; height:4px; background:#22c55e; border-top:2px solid #000; border-bottom:2px solid #000; }
+  .page-title .text { font-size:13px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:#fff; text-shadow:2px 2px 0 #000; background:#22c55e; padding:7px 16px; border:3px solid #000; box-shadow:4px 4px 0 #000; white-space:nowrap; }
+  .panel { background:rgba(255,255,255,.6); border:4px solid #22c55e; padding:22px; box-shadow:8px 8px 0 #22c55e, 16px 16px 0 #000; position:relative; margin-bottom:22px; }
+  .panel::before { content:''; position:absolute; inset:8px; border:2px solid #22c55e; pointer-events:none; opacity:.4; }
+  .field { margin-bottom:14px; position:relative; z-index:2; }
+  .field label { display:block; font-size:10.5px; font-weight:900; color:#000; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+  .field input, .field select { width:100%; padding:14px 16px; border:3px solid #000; font-size:13.5px; font-weight:600; color:#000; outline:none; background:#fff; transition:.2s; font-family:inherit; }
+  .field input::placeholder { color:#999; }
+  .field input:focus, .field select:focus { border-color:#22c55e; background:#f0fdf4; box-shadow:4px 4px 0 #000; transform:translate(-2px,-2px); }
+  .field-info { font-size:10.5px; color:#666; margin-top:6px; font-weight:600; position:relative; z-index:2; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:2; }
+  .btn { padding:12px 20px; border:3px solid #000; background:#22c55e; color:#fff; font-size:12px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; box-shadow:4px 4px 0 #000; transition:.15s; font-family:inherit; display:inline-block; text-align:center; text-decoration:none; }
+  .btn:hover { background:#16a34a; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #000; }
+  .btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  .btn-outline { background:#fff; color:#000; }
+  .btn-outline:hover { background:#f0fdf4; }
+  .loading { display:none; text-align:center; padding:30px; color:#fff; font-weight:900; letter-spacing:2px; text-transform:uppercase; font-size:13px; }
+  .loading.show { display:block; }
+  .loading::after { content:''; display:inline-block; width:20px; height:20px; margin-left:12px; border:3px solid #22c55e; border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; vertical-align:middle; }
+  @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  .result { display:none; }
+  .result.show { display:block; animation: pageIn .4s ease; }
+  @keyframes pageIn { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
+  .result-card { background:rgba(255,255,255,.95); border:4px solid #22c55e; padding:20px; box-shadow:8px 8px 0 #22c55e, 16px 16px 0 #000; position:relative; }
+  .result-card::before { content:''; position:absolute; inset:8px; border:2px solid #22c55e; pointer-events:none; opacity:.4; }
+  .track-header { display:flex; gap:16px; align-items:flex-start; margin-bottom:20px; position:relative; z-index:2; }
+  .track-cover { width:120px; height:120px; border:3px solid #000; box-shadow:5px 5px 0 #22c55e; object-fit:cover; flex-shrink:0; background:#f0fdf4; }
+  .track-info { flex:1; min-width:0; }
+  .track-title { font-size:16px; font-weight:900; color:#000; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; word-break:break-word; line-height:1.3; }
+  .track-artist { font-size:12px; font-weight:800; color:#16a34a; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
+  .track-meta { display:flex; flex-direction:column; gap:6px; }
+  .meta-row { display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; color:#333; }
+  .meta-label { font-size:9.5px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; color:#666; min-width:70px; }
+  .meta-value { color:#000; font-weight:800; word-break:break-word; }
+  .download-area { position:relative; z-index:2; margin-top:16px; padding-top:16px; border-top:3px dashed #22c55e; }
+  .download-btn { display:block; width:100%; padding:16px; background:#22c55e; color:#fff; font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; text-align:center; text-decoration:none; border:3px solid #000; box-shadow:5px 5px 0 #000; transition:.15s; }
+  .download-btn:hover { background:#16a34a; transform:translate(-2px,-2px); box-shadow:7px 7px 0 #000; }
+  .download-btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-120px); background:#000; color:#fff; padding:12px 20px; border:3px solid #22c55e; box-shadow:5px 5px 0 #22c55e; font-size:11.5px; font-weight:900; letter-spacing:1px; text-transform:uppercase; z-index:9999; transition:transform .4s cubic-bezier(.3,1.3,.5,1); max-width:90vw; text-align:center; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .toast.error { border-color:#dc2626; box-shadow:5px 5px 0 #dc2626; }
+  .error-box { background:#fef2f2; border:3px solid #dc2626; color:#dc2626; padding:14px; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; text-align:center; position:relative; z-index:2; }
+  .empty-state { text-align:center; padding:40px 20px; color:#999; font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; }
+  @media (max-width:600px){
+    .nav-logo .brand-text { font-size:12px; letter-spacing:2px; }
+    .panel, .result-card { padding:16px; box-shadow:6px 6px 0 #22c55e, 12px 12px 0 #000; }
+    .page-title .text { font-size:11px; letter-spacing:2px; padding:6px 12px; }
+    .btn { padding:11px 14px; font-size:11px; }
+    .track-cover { width:90px; height:90px; }
+    .track-title { font-size:14px; }
+    .meta-label { min-width:60px; font-size:9px; }
+    .meta-row { font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="../media/background.mp4" type="video/mp4" />
+  </video>
+  <div class="bg-overlay"></div>
+
+  <div class="app">
+
+    <nav class="navbar">
+      <div class="nav-logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" fill="#22c55e" stroke="#000" stroke-width="6"/>
+          <rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+          <circle cx="50" cy="50" r="22" fill="none" stroke="#000" stroke-width="4"/>
+          <circle cx="50" cy="50" r="4" fill="#22c55e" stroke="#000" stroke-width="2"/>
+          <path d="M50 34 Q60 34 62 44" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+          <path d="M50 42 Q55 42 56 48" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+          <path d="M50 50 Q52 50 52 53" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <div class="brand-text">TOOLS <span>ARIEL</span></div>
+      </div>
+      <a class="back-btn" href="../dashboard.html">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+        Kembali
+      </a>
+    </nav>
+
+    <div class="container">
+
+      <div class="page-title">
+        <div class="line"></div>
+        <div class="text">Spotify Downloader</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="panel">
+        <div class="field">
+          <label>URL Lagu Spotify</label>
+          <input type="text" id="urlInput" placeholder="https://open.spotify.com/track/..." />
+          <div class="field-info">Tempel link track dari Spotify. Contoh: https://open.spotify.com/track/2j1fFjWHCI9...</div>
+        </div>
+
+        <div class="field">
+          <label>Server</label>
+          <select id="serverSelect">
+            <option value="server1">Server 1</option>
+            <option value="server2">Server 2</option>
+          </select>
+          <div class="field-info">Pilihan server scraper untuk memproses permintaan.</div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="btnFetch" onclick="ambilLagu()">Download Lagu</button>
+          <button class="btn btn-outline" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">Memproses</div>
+
+      <div class="result" id="result">
+        <div class="result-card" id="resultCard"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast">-</div>
+
+<script>
+  var toastTimer = null;
+  function showToast(msg, isError) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+
+  function setLoading(on) {
+    document.getElementById('loading').classList.toggle('show', on);
+    document.getElementById('btnFetch').disabled = on;
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function resetForm() {
+    document.getElementById('urlInput').value = '';
+    document.getElementById('serverSelect').value = 'server1';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  async function ambilLagu() {
+    var url = document.getElementById('urlInput').value.trim();
+    var server = document.getElementById('serverSelect').value;
+
+    if (!url) {
+      showToast('Masukkan URL Spotify dulu!', true);
+      return;
+    }
+    if (!url.includes('spotify.com')) {
+      showToast('URL harus dari Spotify!', true);
+      return;
+    }
+
+    setLoading(true);
+    document.getElementById('result').classList.remove('show');
+
+    try {
+      var res = await fetch('/api/spotify?url=' + encodeURIComponent(url) + '&server=' + encodeURIComponent(server));
+      var text = await res.text();
+
+      var data;
+      try { data = JSON.parse(text); } catch (e) {
+        showToast('Response server tidak valid', true);
+        document.getElementById('resultCard').innerHTML =
+          '<div class="error-box">Server mengembalikan response tidak valid</div>';
+        document.getElementById('result').classList.add('show');
+        setLoading(false);
+        return;
+      }
+
+      // Cek berbagai format success
+      var isSuccess = data.success === true || data.status === true || data.result;
+      var track = data.result || data.data || data;
+
+      if (!isSuccess || !track) {
+        showToast('Gagal: ' + (data.message || 'Unknown error'), true);
+        document.getElementById('resultCard').innerHTML =
+          '<div class="error-box">' + escapeHtml(data.message || 'Gagal mengambil lagu') + '</div>';
+        document.getElementById('result').classList.add('show');
+        setLoading(false);
+        return;
+      }
+
+      renderResult(track);
+      setLoading(false);
+      document.getElementById('result').classList.add('show');
+      showToast('Lagu berhasil diambil!');
+
+    } catch (err) {
+      setLoading(false);
+      showToast('Error: ' + err.message, true);
+      document.getElementById('resultCard').innerHTML =
+        '<div class="error-box">' + escapeHtml(err.message) + '</div>';
+      document.getElementById('result').classList.add('show');
+    }
+  }
+
+  function renderResult(track) {
+    // Normalize field names
+    var title = track.title || track.name || track.track || 'Unknown Title';
+    var artist = track.artist || track.artists || track.creator || track.author || 'Unknown Artist';
+    var cover = track.thumbnail || track.image || track.cover || track.album_art || '';
+    var duration = track.duration || track.duration_ms || track.length || '-';
+    var album = track.album || track.album_name || '';
+    var dlUrl = track.download || track.download_url || track.url_audio || track.audio || track.link || '';
+    var desc = track.description || '';
+
+    if (typeof artist === 'object') {
+      artist = Array.isArray(artist) ? artist.join(', ') : (artist.name || 'Unknown Artist');
+    }
+
+    // Format durasi kalau ms
+    if (typeof duration === 'number' && duration > 1000) {
+      var totalSec = Math.floor(duration / 1000);
+      var m = Math.floor(totalSec / 60);
+      var s = totalSec % 60;
+      duration = m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    var coverHtml = cover
+      ? '<img class="track-cover" src="' + escapeHtml(cover) + '" alt="cover" onerror="this.style.display=\'none\'">'
+      : '<div class="track-cover" style="display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#22c55e;">♪</div>';
+
+    var downloadHtml = dlUrl
+      ? '<div class="download-area"><a class="download-btn" href="' + escapeHtml(dlUrl) + '" target="_blank" rel="noopener noreferrer">Download Audio (320kbps MP3)</a></div>'
+      : '<div class="download-area"><div class="error-box">Link download tidak tersedia</div></div>';
+
+    document.getElementById('resultCard').innerHTML =
+      '<div class="track-header">' +
+        coverHtml +
+        '<div class="track-info">' +
+          '<div class="track-title">' + escapeHtml(title) + '</div>' +
+          '<div class="track-artist">' + escapeHtml(artist) + '</div>' +
+          '<div class="track-meta">' +
+            (album ? '<div class="meta-row"><span class="meta-label">Album</span><span class="meta-value">' + escapeHtml(album) + '</span></div>' : '') +
+            '<div class="meta-row"><span class="meta-label">Durasi</span><span class="meta-value">' + escapeHtml(duration) + '</span></div>' +
+            (desc ? '<div class="meta-row"><span class="meta-label">Desc</span><span class="meta-value">' + escapeHtml(desc) + '</span></div>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      downloadHtml;
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') ambilLagu();
+  });
+</script>
+
+</body>
+</html>
