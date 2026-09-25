@@ -15,11 +15,9 @@ export default async function handler(req, res) {
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Username & password wajib' });
   }
-
   if (username.length < 3) {
     return res.status(400).json({ success: false, message: 'Username minimal 3 karakter' });
   }
-
   if (password.length < 6) {
     return res.status(400).json({ success: false, message: 'Password minimal 6 karakter' });
   }
@@ -27,13 +25,11 @@ export default async function handler(req, res) {
   const key = 'user:' + username.toLowerCase();
 
   try {
-    // Cek duplikat
     const existing = await kv.get(key);
     if (existing) {
       return res.status(409).json({ success: false, message: 'Username sudah terdaftar' });
     }
 
-    // Simpan user baru
     const userData = {
       username: username,
       password: password,
@@ -42,8 +38,6 @@ export default async function handler(req, res) {
     };
 
     await kv.set(key, userData);
-
-    // Tambahkan ke list semua user
     await kv.sadd('users:all', username.toLowerCase());
 
     return res.status(201).json({
@@ -54,7 +48,7 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: 'Server error: ' + err.message
+      message: 'Database error: ' + err.message
     });
   }
 }
