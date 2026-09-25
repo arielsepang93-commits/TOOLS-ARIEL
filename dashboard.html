@@ -1324,7 +1324,7 @@
   async function logout() {
     if (confirm('Yakin mau keluar?')) {
       try {
-        await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+        await fetch('/api/auth?action=logout', { method: 'POST', credentials: 'include' });
       } catch (e) {}
       sessionStorage.clear();
       window.location.replace('/index.html');
