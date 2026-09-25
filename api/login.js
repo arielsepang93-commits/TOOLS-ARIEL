@@ -1,6 +1,5 @@
 import { kv } from '@vercel/kv';
 
-// Akun default (selalu ada, tidak bisa dihapus)
 const DEFAULT_USERS = {
   'ariel': {
     username: 'Ariel',
@@ -30,41 +29,28 @@ export default async function handler(req, res) {
   let user = null;
 
   try {
-    // Cek dulu di default users
     if (DEFAULT_USERS[username.toLowerCase()]) {
       user = DEFAULT_USERS[username.toLowerCase()];
     } else {
-      // Ambil dari KV
       user = await kv.get(key);
     }
   } catch (err) {
-    // Kalau KV error, cek fallback default
     if (DEFAULT_USERS[username.toLowerCase()]) {
       user = DEFAULT_USERS[username.toLowerCase()];
     } else {
-      return res.status(500).json({
-        success: false,
-        message: 'Database error: ' + err.message
-      });
+      return res.status(500).json({ success: false, message: 'Database error' });
     }
   }
 
-  if (!user) {
+  if (!user || user.password !== password) {
     return res.status(401).json({ success: false, message: 'Username atau password salah' });
   }
 
-  if (user.password !== password) {
-    return res.status(401).json({ success: false, message: 'Username atau password salah' });
-  }
-
-  // Buat token base64
-  const token = Buffer.from(
-    JSON.stringify({
-      user: user.username,
-      role: user.role,
-      exp: Date.now() + 1000 * 60 * 60 * 6
-    })
-  ).toString('base64');
+  const token = Buffer.from(JSON.stringify({
+    user: user.username,
+    role: user.role,
+    exp: Date.now() + 1000 * 60 * 60 * 6
+  })).toString('base64');
 
   res.setHeader('Set-Cookie',
     'authToken=' + token + '; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=' + (60 * 60 * 6)
