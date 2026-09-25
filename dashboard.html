@@ -4,6 +4,103 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Dashboard - ToolsAriel</title>
+
+<!-- ============================================
+     ANTI SOURCE — ToolsAriel
+     ============================================ -->
+<script>
+(function() {
+    /* 1. Blokir klik kanan */
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    /* 2. Blokir shortcut keyboard */
+    document.addEventListener('keydown', function(e) {
+        var k = e.keyCode;
+
+        // F12
+        if (k === 123) { e.preventDefault(); return false; }
+
+        // Ctrl+Shift+I / J / C
+        if (e.ctrlKey && e.shiftKey && (k === 73 || k === 74 || k === 67)) {
+            e.preventDefault(); return false;
+        }
+
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && k === 85) { e.preventDefault(); return false; }
+
+        // Ctrl+S (Save Page)
+        if (e.ctrlKey && k === 83) { e.preventDefault(); return false; }
+
+        // Mac: Cmd+Option+I / J / C / U
+        if (e.metaKey && e.altKey && (k === 73 || k === 74 || k === 67 || k === 85)) {
+            e.preventDefault(); return false;
+        }
+
+        // Mac: Cmd+U / Cmd+S
+        if (e.metaKey && (k === 85 || k === 83)) {
+            e.preventDefault(); return false;
+        }
+    }, false);
+
+    /* 3. Deteksi DevTools terbuka → overlay */
+    var devOpen = false;
+    var threshold = 180;
+
+    function cekDevTools() {
+        var wDiff = window.outerWidth - window.innerWidth;
+        var hDiff = window.outerHeight - window.innerHeight;
+
+        if (wDiff > threshold || hDiff > threshold) {
+            if (!devOpen) {
+                devOpen = true;
+                var ov = document.createElement('div');
+                ov.id = '__protectOverlay';
+                ov.style.cssText =
+                    'position:fixed;inset:0;z-index:999999;background:#000;' +
+                    'display:flex;align-items:center;justify-content:center;' +
+                    'color:#dc2626;font-family:sans-serif;font-weight:900;' +
+                    'text-align:center;padding:30px;letter-spacing:2px;';
+                ov.innerHTML =
+                    '<div>' +
+                    '<div style="font-size:60px;margin-bottom:20px;">⛔</div>' +
+                    '<div style="font-size:22px;margin-bottom:12px;">AKSES DITOLAK</div>' +
+                    '<div style="color:#fff;font-size:13px;font-weight:500;letter-spacing:1px;">' +
+                    'Tutup Developer Tools untuk melanjutkan</div></div>';
+                document.body.appendChild(ov);
+            }
+        } else {
+            if (devOpen) {
+                devOpen = false;
+                var old = document.getElementById('__protectOverlay');
+                if (old) old.remove();
+            }
+        }
+    }
+    setInterval(cekDevTools, 1200);
+
+    /* 4. Blokir drag gambar & video */
+    document.addEventListener('dragstart', function(e) {
+        var tag = (e.target.tagName || '').toLowerCase();
+        if (tag === 'img' || tag === 'video' || tag === 'source') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    /* 5. Peringatan di Console */
+    setTimeout(function() {
+        try {
+            console.log('%c⛔ STOP!', 'color:#dc2626;font-size:44px;font-weight:900;text-shadow:2px 2px 0 #000;');
+            console.log('%cSource ini dilindungi ToolsAriel. Jangan coba-coba ya!', 'color:#facc15;font-size:14px;font-weight:700;');
+        } catch (e) {}
+    }, 500);
+
+})();
+</script>
+
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter','Segoe UI',sans-serif; }
 
@@ -432,7 +529,6 @@
   .badge.pending { background:#fef3c7; color:#d97706; }
   .badge.failed { background:#fee2e2; color:#dc2626; }
 
-  /* Role Developer Highlight */
   .role-developer {
     color:#dc2626 !important;
     text-shadow:0 0 10px rgba(220,38,38,.6), 0 0 20px rgba(220,38,38,.3);
@@ -443,9 +539,6 @@
     50% { text-shadow:0 0 15px rgba(220,38,38,.9), 0 0 30px rgba(220,38,38,.5); }
   }
 
-  /* ============================================
-     AI ARIEL FULLSCREEN
-     ============================================ */
   #page-ai {
     position:fixed !important;
     top:0 !important;
@@ -1191,9 +1284,7 @@
   document.getElementById('dataUser').textContent = user;
   document.getElementById('akunUser').textContent = user;
 
-  /* ============================================
-     TAMPILKAN ROLE
-     ============================================ */
+  /* TAMPILKAN ROLE */
   var roleDisplay = userRole.charAt(0).toUpperCase() + userRole.slice(1);
 
   var elRole1 = document.getElementById('dataRole');
@@ -1354,9 +1445,7 @@
     }
   }
 
-  /* ============================================
-     AI ARIEL CHAT
-     ============================================ */
+  /* AI ARIEL CHAT */
   function tambahPesan(teks, tipe) {
     var chatBox = document.getElementById('chatBox');
     var div = document.createElement('div');
@@ -1436,4 +1525,4 @@
 </script>
 
 </body>
- </html>
+               </html>
