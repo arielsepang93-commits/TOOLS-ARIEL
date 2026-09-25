@@ -20,7 +20,23 @@ export default async function handler(req, res) {
         });
 
         const data = await response.json();
-        return res.status(response.status).json(data);
+
+        // Ambil URL gambar
+        var imageUrl = '';
+        if (data.data && data.data.image) imageUrl = data.data.image;
+        else if (data.image) imageUrl = data.image;
+        else if (data.result) imageUrl = data.result;
+        else if (data.url) imageUrl = data.url;
+
+        if (!imageUrl) {
+            return res.status(500).json({ success: false, message: "Gambar tidak tersedia" });
+        }
+
+        // Bungkus pakai proxy kita sendiri
+        return res.json({
+            success: true,
+            image: "/api/img?url=" + encodeURIComponent(imageUrl)
+        });
 
     } catch (error) {
         if (error.name === "TimeoutError" || error.name === "AbortError") {
