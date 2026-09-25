@@ -1,19 +1,12 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/view-source", "destination": "/tools/view-source.html" },
-    { "source": "/tiktok", "destination": "/tools/tiktok.html" },
-    { "source": "/brat", "destination": "/tools/brat.html" },
-    { "source": "/fakeff", "destination": "/tools/fakeff.html" },
-    { "source": "/amprem", "destination": "/tools/amprem.html" },
-    { "source": "/darksystem", "destination": "/tools/darksystem.html" }
-  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ]
 }
