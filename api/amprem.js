@@ -1,142 +1,88 @@
-export default async function handler(req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+/**
+ * NAMA SCRAPE  : Alight Motion Premium Generator
+ * ADMIN UTAMA  : Ariel.html
+ * PENCIPTA     : Ariel
+ * USAGE        : node amprem.js
+ *                Mengirim magic link, memproses verifikasi,
+ *                dan meneruskan idToken ke endpoint berikutnya.
+ */
 
-    if (req.method === "OPTIONS") return res.status(204).end();
+const axios = require('axios');
 
-    const TARGET = "https://am-premiumms.vercel.app";
+const API_URL = 'https://anita-studio.netlify.app/.netlify/functions/amprem';
+const email = 'EMAIL_KAMU';
 
-    const HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-S908E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Content-Type": "application/json",
-        "Origin": TARGET,
-        "Referer": TARGET + "/"
-    };
-
-    async function cobaEndpoint(urls, body) {
-        let lastErr = null;
-        for (const url of urls) {
-            try {
-                const r = await fetch(url, {
-                    method: "POST",
-                    headers: HEADERS,
-                    body: JSON.stringify(body),
-                    signal: AbortSignal.timeout(15000)
-                });
-                const txt = await r.text();
-                let data;
-                try { data = JSON.parse(txt); } catch (e) { data = { raw: txt }; }
-
-                // Deteksi Vercel Security Checkpoint
-                if (txt.includes("Vercel Security Checkpoint") || txt.includes("Just a moment")) {
-                    lastErr = {
-                        ok: false,
-                        status: 403,
-                        data: { pesan: "Situs target dilindungi Vercel Security Checkpoint (bot protection)." },
-                        url
-                    };
-                    continue;
-                }
-
-                if (r.ok) return { ok: true, status: r.status, data, url };
-                lastErr = { ok: false, status: r.status, data, url };
-            } catch (e) {
-                lastErr = { ok: false, status: 0, data: { error: e.message }, url };
-            }
-        }
-        return lastErr;
+async function post(action, data) {
+  const response = await axios.post(
+    API_URL,
+    {
+      action,
+      ...data
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     }
+  );
 
-    try {
-        const action = req.query.action || (req.body && req.body.action);
-
-        // ================= KIRIM MAGIC LINK =================
-        if (action === "kirim-link") {
-            const email = req.query.email || (req.body && req.body.email);
-            if (!email) return res.status(400).json({ sukses: false, pesan: "Email wajib diisi" });
-
-            const hasil = await cobaEndpoint([
-                TARGET + "/api/send-magic-link",
-                TARGET + "/api/auth/send-link",
-                TARGET + "/api/send-link",
-                TARGET + "/api/magic-link",
-                TARGET + "/api/auth/magic-link"
-            ], { email });
-
-            if (!hasil.ok) {
-                return res.status(500).json({
-                    sukses: false,
-                    pesan: "Gagal mengirim magic link (situs target memblokir request otomatis).",
-                    detail: JSON.stringify(hasil.data, null, 2),
-                    lastUrl: hasil.url,
-                    status: hasil.status,
-                    solusi: "Situs target dilindungi Vercel Security Checkpoint. Ambil magic link secara manual melalui browser, lalu tempel di kolom OobCode."
-                });
-            }
-
-            return res.status(200).json({
-                sukses: true,
-                pesan: "Link verifikasi instan telah dikirim ke " + email + ". Cek inbox atau folder spam.",
-                endpoint_used: hasil.url,
-                data: hasil.data
-            });
-        }
-
-        // ================= VERIFIKASI =================
-        if (action === "verifikasi") {
-            const email = req.query.email || (req.body && req.body.email);
-            const link = req.query.link || (req.body && req.body.link);
-            if (!email || !link) return res.status(400).json({ sukses: false, pesan: "Email dan link wajib diisi" });
-
-            let oobCode = link.trim();
-            if (oobCode.includes("oobCode=")) {
-                try { oobCode = new URL(oobCode).searchParams.get("oobCode"); } catch (e) {}
-            }
-
-            const hasil = await cobaEndpoint([
-                TARGET + "/api/verify-oobcode",
-                TARGET + "/api/auth/verify",
-                TARGET + "/api/verify",
-                TARGET + "/api/activate",
-                TARGET + "/api/auth/activate"
-            ], { email, oobCode });
-
-            if (!hasil.ok) {
-                return res.status(500).json({
-                    sukses: false,
-                    pesan: "Gagal verifikasi oobCode.",
-                    detail: JSON.stringify(hasil.data, null, 2),
-                    lastUrl: hasil.url,
-                    status: hasil.status
-                });
-            }
-
-            return res.status(200).json({
-                sukses: true,
-                pesan: "Verifikasi berhasil, Alight Motion Premium VIP aktif 1 Tahun!",
-                endpoint_used: hasil.url,
-                data: {
-                    email_target: email,
-                    uid_firebase: hasil.data.uid || hasil.data.userId || "-",
-                    status_akun: "Alight Motion Pro VIP",
-                    order_id_aktivasi: hasil.data.orderId || hasil.data.order_id || "-",
-                    masa_berlaku_vip: "25 September 2027",
-                    token_type: hasil.data.tokenType || "Bearer",
-                    raw: hasil.data
-                }
-            });
-        }
-
-        return res.status(404).json({ sukses: false, pesan: "Action tidak ditemukan" });
-
-    } catch (error) {
-        return res.status(500).json({
-            sukses: false,
-            pesan: "Server error: " + error.message,
-            detail: JSON.stringify(error, Object.getOwnPropertyNames(error))
-        });
-    }
+  return response.data;
 }
+
+async function main() {
+  try {
+    const magicLink = await post('send-magiclink', {
+      email
+    });
+
+    console.log(magicLink);
+
+    if (!magicLink.success) {
+      throw new Error(magicLink.message || 'Gagal mengirim magic link');
+    }
+
+    const rawLink = 'RAW_MAGIC_LINK_KAMU';
+
+    const verification = await post('verify-account', {
+      email,
+      rawLink
+    });
+
+    console.log(verification);
+
+    if (!verification.success) {
+      throw new Error(verification.message || 'Verifikasi gagal');
+    }
+
+    const idToken =
+      verification.idToken ||
+      verification.profile?.idToken;
+
+    if (!idToken) {
+      throw new Error('idToken tidak ditemukan');
+    }
+
+    const premium = await post('apply-premium', {
+      email,
+      idToken
+    });
+
+    console.log(premium);
+
+    if (!premium.success) {
+      throw new Error(premium.message || 'Proses gagal');
+    }
+
+    console.log(JSON.stringify(premium, null, 2));
+
+  } catch (error) {
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
+    } else {
+      console.error(error.message);
+    }
+  }
+}
+
+main();
