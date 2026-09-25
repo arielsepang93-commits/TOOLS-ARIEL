@@ -1,64 +1,78 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const canvas = document.getElementById("canvas"); // Pastikan ID sesuai HTML Anda
-  const ctx = canvas.getContext("2d");
-  const textInput = document.getElementById("text-input"); // Sesuaikan ID
-  const generateBtn = document.getElementById("generate-btn"); // Sesuaikan ID
-  const downloadBtn = document.getElementById("download-btn"); // Sesuaikan ID
-  const preview = document.getElementById("preview"); // Sesuaikan ID (tag <img>)
+  // 1. Ambil elemen HTML (Gue buat auto-detect biar aman kalau ID lu beda)
+  const inputTeks = document.getElementById('teks') || document.querySelector('input[type="text"]');
+  const btnGenerate = document.getElementById('generate') || document.querySelector('button');
+  const btnReset = document.getElementById('reset') || document.querySelectorAll('button')[1];
+  const imgPreview = document.getElementById('preview') || document.querySelector('img');
+  const btnDownload = document.getElementById('download') || Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('DOWNLOAD'));
 
-  if (!canvas || !textInput || !generateBtn) {
-    console.error("Elemen HTML tidak ditemukan! Cek ID di HTML Anda.");
+  if (!inputTeks || !btnGenerate || !imgPreview) {
+    console.error("Elemen HTML gak ketemu! Pastikan input, tombol generate, dan tag <img> ada.");
     return;
   }
 
-  // Fungsi Generate Brat
-  function generateBrat() {
-    const text = textInput.value.trim() || "Tets";
+  // 2. Buat Canvas virtual di memori (Gak perlu nambah tag <canvas> di HTML)
+  const canvas = document.createElement('canvas');
+  canvas.width = 500;
+  canvas.height = 500;
+  const ctx = canvas.getContext('2d');
 
-    // 1. PENTING: Bersihkan canvas setiap kali generate baru (Mencegah memory leak & error di HP)
+  // 3. Fungsi Gambar Brat
+  function generateBrat() {
+    const teks = inputTeks.value.trim() || 'Brat';
+
+    // Bersihkan canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Gambar background putih
-    ctx.fillStyle = "#ffffff";
+    // Background putih
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 3. Gambar teks (Brat Style)
-    ctx.fillStyle = "#000000";
-    // Gunakan font standar sistem, jangan load font eksternal biar gak gagal
-    ctx.font = "bold 60px Arial, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Efek blur khas Brat
-    ctx.filter = "blur(2px)";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    // Teks gaya Brat
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 60px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    // Reset filter
-    ctx.filter = "none";
+    // Efek blur
+    ctx.filter = 'blur(2px)';
+    ctx.fillText(teks, canvas.width / 2, canvas.height / 2);
+    ctx.filter = 'none'; // Reset blur
 
-    // 4. Tampilkan ke layar pakai toDataURL (JANGAN pakai createObjectURL, sering expired di HP)
-    try {
-      const dataUrl = canvas.toDataURL("image/png");
-      if (preview) {
-        preview.src = dataUrl;
-        preview.style.display = "block";
-      }
-      if (downloadBtn) {
-        downloadBtn.style.display = "block";
-        // Hapus event lama jika ada, lalu pasang baru
-        downloadBtn.onclick = () => {
-          const link = document.createElement("a");
-          link.download = "brat-" + Date.now() + ".png";
-          link.href = dataUrl;
-          link.click();
-        };
-      }
-    } catch (error) {
-      console.error("Gagal export canvas:", error);
-      alert("Gagal membuat gambar. Coba refresh halaman.");
-    }
+    // Ubah jadi gambar dan tampilkan
+    const dataUrl = canvas.toDataURL('image/png');
+    imgPreview.src = dataUrl;
+    imgPreview.style.display = 'block';
+    
+    return dataUrl;
   }
 
-  // Pasang event listener
-  generateBtn.addEventListener("click", generateBrat);
+  // 4. Tombol GENERATE
+  btnGenerate.addEventListener('click', (e) => {
+    e.preventDefault(); // Biar gak reload halaman
+    generateBrat();
+  });
+
+  // 5. Tombol RESET
+  if (btnReset) {
+    btnReset.addEventListener('click', (e) => {
+      e.preventDefault();
+      inputTeks.value = '';
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  }
+
+  // 6. Tombol DOWNLOAD PNG
+  if (btnDownload) {
+    btnDownload.addEventListener('click', (e) => {
+      e.preventDefault();
+      const dataUrl = generateBrat(); // Pastikan gambar terbaru yang didownload
+      const link = document.createElement('a');
+      link.download = `brat-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    });
+  }
 });
