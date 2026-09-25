@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 export const config = {
   matcher: [
     '/dashboard',
@@ -8,27 +6,37 @@ export const config = {
   ]
 };
 
-export function middleware(req) {
-  const cookie = req.headers.get('cookie') || '';
+export default function middleware(request) {
+  const cookie = request.headers.get('cookie') || '';
   const match = cookie.match(/authToken=([^;]+)/);
 
-  // Tidak ada token → redirect ke login
+  // Tidak ada token → redirect login
   if (!match) {
-    return NextResponse.redirect(new URL('/index.html', req.url));
+    return new Response(null, {
+      status: 307,
+      headers: { 'Location': '/index.html' }
+    });
   }
 
-  // Verifikasi token
+  // Verifikasi token pakai atob (bukan Buffer)
   let payload;
   try {
-    payload = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
+    const decoded = atob(match[1]);
+    payload = JSON.parse(decoded);
   } catch (e) {
-    return NextResponse.redirect(new URL('/index.html', req.url));
+    return new Response(null, {
+      status: 307,
+      headers: { 'Location': '/index.html' }
+    });
   }
 
   if (!payload.exp || payload.exp < Date.now()) {
-    return NextResponse.redirect(new URL('/index.html', req.url));
+    return new Response(null, {
+      status: 307,
+      headers: { 'Location': '/index.html' }
+    });
   }
 
-  // Token valid → lanjut
-  return NextResponse.next();
+  // Token valid → lanjutkan request (return undefined)
+  return undefined;
 }
