@@ -59,11 +59,12 @@
   .download-btn { display:block; width:100%; padding:16px; background:#22c55e; color:#fff; font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; text-align:center; text-decoration:none; border:3px solid #000; box-shadow:5px 5px 0 #000; transition:.15s; }
   .download-btn:hover { background:#16a34a; transform:translate(-2px,-2px); box-shadow:7px 7px 0 #000; }
   .download-btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  .alt-download { display:block; width:100%; padding:12px; background:#fff; color:#000; font-size:11px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; text-align:center; text-decoration:none; border:3px solid #000; box-shadow:4px 4px 0 #000; transition:.15s; margin-top:8px; }
+  .alt-download:hover { background:#f0fdf4; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #000; }
   .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-120px); background:#000; color:#fff; padding:12px 20px; border:3px solid #22c55e; box-shadow:5px 5px 0 #22c55e; font-size:11.5px; font-weight:900; letter-spacing:1px; text-transform:uppercase; z-index:9999; transition:transform .4s cubic-bezier(.3,1.3,.5,1); max-width:90vw; text-align:center; }
   .toast.show { transform:translateX(-50%) translateY(0); }
   .toast.error { border-color:#dc2626; box-shadow:5px 5px 0 #dc2626; }
   .error-box { background:#fef2f2; border:3px solid #dc2626; color:#dc2626; padding:14px; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; text-align:center; position:relative; z-index:2; }
-  .empty-state { text-align:center; padding:40px 20px; color:#999; font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; }
   @media (max-width:600px){
     .nav-logo .brand-text { font-size:12px; letter-spacing:2px; }
     .panel, .result-card { padding:16px; box-shadow:6px 6px 0 #22c55e, 12px 12px 0 #000; }
@@ -162,13 +163,74 @@
 
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function resetForm() {
     document.getElementById('urlInput').value = '';
     document.getElementById('serverSelect').value = 'server1';
     document.getElementById('result').classList.remove('show');
+  }
+
+  // ============ CARI LINK DOWNLOAD DARI BERBAGAI FIELD ============
+  function cariLinkDownload(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+
+    var fields = [
+      'download', 'download_url', 'downloadUrl',
+      'url_audio', 'urlAudio', 'audio', 'audio_url', 'audioUrl',
+      'mp3', 'mp3_url', 'mp3Url',
+      'link', 'link_download', 'linkDownload',
+      'url'
+    ];
+
+    for (var i = 0; i < fields.length; i++) {
+      var v = obj[fields[i]];
+      if (typeof v === 'string' && v.startsWith('http')) return v;
+      if (v && typeof v === 'object') {
+        var inner = v.mp3 || v.url || v.link || v.audio || v.download || v.href;
+        if (typeof inner === 'string' && inner.startsWith('http')) return inner;
+      }
+    }
+
+    // Cek array downloads / medias / formats
+    var arrFields = ['downloads', 'medias', 'media', 'links', 'formats'];
+    for (var k = 0; k < arrFields.length; k++) {
+      var arr = obj[arrFields[k]];
+      if (Array.isArray(arr)) {
+        for (var j = 0; j < arr.length; j++) {
+          var item = arr[j];
+          if (typeof item === 'string' && item.startsWith('http')) return item;
+          if (item && typeof item === 'object') {
+            var u = item.url || item.link || item.href || item.download;
+            if (typeof u === 'string' && u.startsWith('http')) return u;
+          }
+        }
+      }
+    }
+
+    // Cari rekursif di semua key
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        var val = obj[key];
+        var lowerKey = key.toLowerCase();
+        if (typeof val === 'string' && val.startsWith('http') && (
+          lowerKey.indexOf('download') !== -1 ||
+          lowerKey.indexOf('audio') !== -1 ||
+          lowerKey.indexOf('mp3') !== -1 ||
+          lowerKey.indexOf('link') !== -1 ||
+          lowerKey.indexOf('url') !== -1
+        )) {
+          return val;
+        }
+      }
+    }
+
+    return '';
   }
 
   async function ambilLagu() {
@@ -192,29 +254,27 @@
       var text = await res.text();
 
       var data;
-      try { data = JSON.parse(text); } catch (e) {
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        setLoading(false);
         showToast('Response server tidak valid', true);
         document.getElementById('resultCard').innerHTML =
           '<div class="error-box">Server mengembalikan response tidak valid</div>';
         document.getElementById('result').classList.add('show');
-        setLoading(false);
         return;
       }
 
-      // Cek berbagai format success
-      var isSuccess = data.success === true || data.status === true || data.result;
-      var track = data.result || data.data || data;
-
-      if (!isSuccess || !track) {
+      if (!data.success) {
+        setLoading(false);
         showToast('Gagal: ' + (data.message || 'Unknown error'), true);
         document.getElementById('resultCard').innerHTML =
           '<div class="error-box">' + escapeHtml(data.message || 'Gagal mengambil lagu') + '</div>';
         document.getElementById('result').classList.add('show');
-        setLoading(false);
         return;
       }
 
-      renderResult(track);
+      renderResult(data.result || data.data || data);
       setLoading(false);
       document.getElementById('result').classList.add('show');
       showToast('Lagu berhasil diambil!');
@@ -229,17 +289,28 @@
   }
 
   function renderResult(track) {
-    // Normalize field names
-    var title = track.title || track.name || track.track || 'Unknown Title';
-    var artist = track.artist || track.artists || track.creator || track.author || 'Unknown Artist';
-    var cover = track.thumbnail || track.image || track.cover || track.album_art || '';
-    var duration = track.duration || track.duration_ms || track.length || '-';
-    var album = track.album || track.album_name || '';
-    var dlUrl = track.download || track.download_url || track.url_audio || track.audio || track.link || '';
-    var desc = track.description || '';
+    // Unwrap nested result
+    if (track.result && typeof track.result === 'object' && !track.title) track = track.result;
+    if (track.data && typeof track.data === 'object' && !track.title) track = track.data;
 
-    if (typeof artist === 'object') {
-      artist = Array.isArray(artist) ? artist.join(', ') : (artist.name || 'Unknown Artist');
+    var title = track.title || track.name || track.track || track.song || 'Unknown Title';
+    var artist = track.artist || track.artists || track.creator || track.author || 'Unknown Artist';
+    var cover = track.thumbnail || track.image || track.cover || track.album_art || track.albumArt || '';
+    var duration = track.duration || track.length || track.duration_ms || '-';
+    var album = track.album || track.album_name || '';
+    var desc = track.description || track.desc || '';
+
+    // Cari link download pakai helper
+    var dlUrl = cariLinkDownload(track);
+    if (!dlUrl && track.raw) dlUrl = cariLinkDownload(track.raw);
+
+    // Artist bisa array atau object
+    if (Array.isArray(artist)) {
+      artist = artist.map(function(a) {
+        return typeof a === 'object' ? (a.name || a.title || '') : a;
+      }).filter(Boolean).join(', ');
+    } else if (typeof artist === 'object') {
+      artist = artist.name || artist.title || 'Unknown Artist';
     }
 
     // Format durasi kalau ms
@@ -252,11 +323,15 @@
 
     var coverHtml = cover
       ? '<img class="track-cover" src="' + escapeHtml(cover) + '" alt="cover" onerror="this.style.display=\'none\'">'
-      : '<div class="track-cover" style="display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#22c55e;">♪</div>';
+      : '<div class="track-cover" style="display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#22c55e;">&#9835;</div>';
 
     var downloadHtml = dlUrl
-      ? '<div class="download-area"><a class="download-btn" href="' + escapeHtml(dlUrl) + '" target="_blank" rel="noopener noreferrer">Download Audio (320kbps MP3)</a></div>'
-      : '<div class="download-area"><div class="error-box">Link download tidak tersedia</div></div>';
+      ? '<div class="download-area">' +
+          '<a class="download-btn" href="' + escapeHtml(dlUrl) + '" target="_blank" rel="noopener noreferrer">Download Audio (320kbps MP3)</a>' +
+        '</div>'
+      : '<div class="download-area">' +
+          '<div class="error-box">Link download tidak tersedia. Coba server lain.</div>' +
+        '</div>';
 
     document.getElementById('resultCard').innerHTML =
       '<div class="track-header">' +
