@@ -1,95 +1,47 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // 1. Ambil elemen HTML (Auto-detect biar aman)
-  const inputTeks = document.getElementById('teks') || document.querySelector('input[type="text"]');
-  const btnGenerate = document.getElementById('generate') || document.querySelector('button');
-  const btnReset = document.getElementById('reset') || document.querySelectorAll('button')[1];
-  const imgPreview = document.getElementById('preview') || document.querySelector('img');
-  const btnDownload = document.getElementById('download') || Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('DOWNLOAD'));
-
-  if (!inputTeks || !btnGenerate || !imgPreview) {
-    console.error("Elemen HTML gak ketemu! Cek ID input, tombol, dan tag img.");
-    return;
-  }
-
-  // 2. Fungsi Generate
-  async function generateBrat() {
-    const teks = inputTeks.value.trim() || 'Brat';
-    
-    // Set loading state
-    imgPreview.src = '';
-    imgPreview.alt = 'Loading...';
-    imgPreview.style.display = 'block';
-    imgPreview.style.backgroundColor = '#333';
+export default async function handler(req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") return res.status(204).end();
+    if (req.method !== "GET") return res.status(405).json({ success: false, message: "Method not allowed" });
 
     try {
-      // 3. Panggil API XyloAPI LANGSUNG
-      const apiUrl = `https://xyloapi.qzz.io/api/maker/brat?text=${encodeURIComponent(teks)}`;
-      const response = await fetch(apiUrl);
+        const { text } = req.query;
+        if (!text) return res.status(400).json({ success: false, message: "Parameter text wajib diisi" });
 
-      // Cek status HTTP
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
+        const apiUrl = "https://xyloapi.qzz.io/api/maker/brat?text=" + encodeURIComponent(text);
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "application/json"
+            },
+            signal: AbortSignal.timeout(25000)
+        });
 
-      // 4. Parse JSON
-      const data = await response.json();
-      console.log("Respons XyloAPI:", data); // Cek di console buat debug
+        const data = await response.json();
 
-      // 5. EKSTRAK URL GAMBAR (Kunci utamanya ada di data.data.image)
-      if (!data.success || !data.data || !data.data.image) {
-        throw new Error("Format respons API tidak sesuai atau gambar tidak tersedia");
-      }
+        // Ambil URL gambar dari response XyloAPI
+        var imageUrl = '';
+        if (data.data && data.data.image) imageUrl = data.data.image;
+        else if (data.image) imageUrl = data.image;
+        else if (data.result) imageUrl = data.result;
+        else if (data.url) imageUrl = data.url;
 
-      // 6. Tampilkan gambar
-      imgPreview.src = data.data.image;
-      imgPreview.alt = 'Hasil Brat';
-      imgPreview.style.backgroundColor = 'transparent';
+        if (!imageUrl) {
+            return res.status(500).json({ success: false, message: "Gambar tidak tersedia" });
+        }
+
+        // Bungkus pakai proxy kita biar gak diblokir CDN XyloAPI
+        return res.json({
+            success: true,
+            image: "/api/img?url=" + encodeURIComponent(imageUrl)
+        });
 
     } catch (error) {
-      console.error("Error:", error);
-      // Tampilkan pesan error asli, bukan cuma "Gambar tidak tersedia"
-      imgPreview.alt = `GAGAL: ${error.message}`;
-      imgPreview.src = '';
-      imgPreview.style.backgroundColor = '#ffcccc';
+        if (error.name === "TimeoutError" || error.name === "AbortError") {
+            return res.status(504).json({ success: false, message: "API timeout" });
+        }
+        return res.status(500).json({ success: false, message: "Gagal: " + error.message });
     }
-  }
-
-  // 7. Event Listeners
-  btnGenerate.addEventListener('click', (e) => {
-    e.preventDefault();
-    generateBrat();
-  });
-
-  if (btnReset) {
-    btnReset.addEventListener('click', (e) => {
-      e.preventDefault();
-      inputTeks.value = '';
-      imgPreview.src = '';
-      imgPreview.alt = '';
-      imgPreview.style.display = 'none';
-      imgPreview.style.backgroundColor = 'transparent';
-    });
-  }
-
-  if (btnDownload) {
-    btnDownload.addEventListener('click', async (e) => {
-      e.preventDefault();
-      if (!imgPreview.src) return alert("Generate dulu bre!");
-      
-      try {
-        // Fetch gambarnya buat di-download (biar gak kena CORS download)
-        const res = await fetch(imgPreview.src);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.download = `brat-${Date.now()}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url); // Bersihin memori
-      } catch (err) {
-        alert("Gagal download: " + err.message);
-      }
-    });
-  }
-});
+}
