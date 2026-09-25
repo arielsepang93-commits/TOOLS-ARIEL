@@ -15,8 +15,52 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, message: "Parameter prompt wajib diisi" });
         }
 
-        // Paksa AI jawab pakai Bahasa Indonesia
-        const promptFinal = "Jawab dengan Bahasa Indonesia yang santai dan jelas. Pertanyaan: " + prompt;
+        // ============================================
+        // DETEKSI SAPAAN
+        // ============================================
+        const sapaan = [
+            "halo", "hai", "hi", "hey", "hei", "hallo", "helo",
+            "assalamualaikum", "salam", "pagi", "siang", "sore",
+            "malam", "selamat pagi", "selamat siang", "selamat sore",
+            "selamat malam", "permisi", "oy", "woi", "woy", "tes", "test",
+            "p", "ping", "yo", "sup", "wassup", "apa kabar", "kabar"
+        ];
+
+        const promptLower = prompt.toLowerCase().trim();
+        const isSapaan = sapaan.some(function(kata) {
+            // Cocok persis atau cuma sapaan + tanda baca
+            return promptLower === kata ||
+                   promptLower === kata + "!" ||
+                   promptLower === kata + "?" ||
+                   promptLower === kata + " " ||
+                   promptLower.startsWith(kata + " ");
+        });
+
+        if (isSapaan) {
+            const balasanSapaan = [
+                "Halo! Saya Ariel AI, siap membantu kamu. Ada yang bisa saya bantu?",
+                "Hai! Ariel AI di sini. Mau tanya apa hari ini?",
+                "Halo halo! Saya Ariel AI, asisten cerdas kamu. Silakan tanya apa saja!",
+                "Hai! Ariel AI siap membantu. Ada yang bisa saya bantu?",
+                "Halo! Kenalin, saya Ariel AI. Mau ngobrol apa kita hari ini?",
+                "Hai hai! Ariel AI nih. Silakan tanya apa saja ya!"
+            ];
+            const pilih = balasanSapaan[Math.floor(Math.random() * balasanSapaan.length)];
+
+            return res.json({
+                success: true,
+                creator: "Ariel AI",
+                data: {
+                    response: pilih,
+                    text: prompt
+                }
+            });
+        }
+
+        // ============================================
+        // PERTANYAAN BIASA → KE XYLOAPI
+        // ============================================
+        const promptFinal = "Kamu adalah Ariel AI, asisten cerdas yang ramah. Jawab dengan Bahasa Indonesia yang santai dan jelas. Pertanyaan: " + prompt;
 
         const apiUrl = "https://xyloapi.qzz.io/api/ai-chat/aya?prompt=" + encodeURIComponent(promptFinal);
 
