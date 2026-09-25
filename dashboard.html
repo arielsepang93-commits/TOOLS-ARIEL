@@ -871,10 +871,15 @@
   <div class="toast" id="toast">-</div>
 
 <script>
+  /* ============================================
+     PROTEKSI LOGIN — WAJIB LOGIN VERIFIED
+     ============================================ */
   var user = sessionStorage.getItem('user');
   var token = sessionStorage.getItem('token');
+  var verified = sessionStorage.getItem('loginVerified');
 
-  if (!user || !token) {
+  if (!user || !token || verified !== 'true') {
+    sessionStorage.clear();
     window.location.replace('index.html');
     throw new Error('Redirect ke login');
   }
@@ -996,9 +1001,7 @@
 
   function logout() {
     if (confirm('Yakin mau keluar?')) {
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('loginTime');
-      sessionStorage.removeItem('token');
+      sessionStorage.clear();
       window.location.replace('index.html');
     }
   }
