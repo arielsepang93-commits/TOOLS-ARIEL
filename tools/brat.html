@@ -151,18 +151,13 @@
       var res = await fetch('/api/brat?text=' + encodeURIComponent(text));
       var data = await res.json();
 
-      var actual = data;
-      if (data.raw && typeof data.raw === 'string') {
-        try { actual = JSON.parse(data.raw); } catch (e) {}
-      }
-
       var imageUrl = '';
-      if (actual && actual.data && actual.data.image) imageUrl = actual.data.image;
-      else if (actual && actual.image) imageUrl = actual.image;
-      else if (actual && actual.result) imageUrl = actual.result;
-      else if (actual && actual.url) imageUrl = actual.url;
+      if (data.data && data.data.image) imageUrl = data.data.image;
+      else if (data.image) imageUrl = data.image;
+      else if (data.result) imageUrl = data.result;
+      else if (data.url) imageUrl = data.url;
 
-      if (!imageUrl) throw new Error('URL gambar tidak ditemukan');
+      if (!imageUrl) throw new Error('Gambar tidak tersedia');
 
       var preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
