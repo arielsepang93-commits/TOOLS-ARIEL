@@ -433,18 +433,93 @@
   .badge.failed { background:#fee2e2; color:#dc2626; }
 
   /* ============================================
-     AI CHAT
+     AI ARIEL FULLSCREEN
      ============================================ */
+  .page#page-ai {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index:400;
+    padding:20px;
+    margin:0;
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .page#page-ai.active {
+    display:flex;
+    animation: aiIn .3s ease;
+  }
+  @keyframes aiIn {
+    from { opacity:0; transform:translateY(20px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  .ai-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    background:rgba(255,255,255,.95);
+    border:3px solid #000;
+    box-shadow:5px 5px 0 #dc2626;
+    margin-bottom:14px;
+    flex-shrink:0;
+  }
+  .ai-header-left {
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .ai-header-title {
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:#000;
+  }
+  .ai-header-title span {
+    color:#dc2626;
+    text-shadow:1.5px 1.5px 0 #000;
+  }
+  .ai-close-btn {
+    width:38px;
+    height:38px;
+    background:#dc2626;
+    border:3px solid #000;
+    color:#fff;
+    font-size:20px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:3px 3px 0 #000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.15s;
+    font-family:inherit;
+    line-height:1;
+  }
+  .ai-close-btn:hover {
+    background:#b91c1c;
+    transform:translate(-2px,-2px);
+    box-shadow:5px 5px 0 #000;
+  }
+  .ai-close-btn:active {
+    transform:translate(2px,2px);
+    box-shadow:1px 1px 0 #000;
+  }
+
   .chat-box {
+    flex:1;
     background:rgba(255,255,255,.55);
     border:4px solid #dc2626;
-    padding:20px;
+    padding:16px;
     box-shadow:8px 8px 0 #dc2626, 16px 16px 0 #000;
     position:relative;
-    min-height:350px;
-    max-height:450px;
     overflow-y:auto;
-    margin-bottom:20px;
+    margin-bottom:14px;
   }
   .chat-box::before {
     content:'';
@@ -464,19 +539,18 @@
     position:relative;
     z-index:2;
     word-wrap:break-word;
+    max-width:85%;
   }
   .message.user {
     background:#dc2626;
     color:#fff;
     margin-left:auto;
-    max-width:85%;
     text-align:right;
   }
   .message.ai {
     background:#fff;
     color:#000;
     margin-right:auto;
-    max-width:85%;
   }
   .message.ai::before {
     content:'AI ARIEL';
@@ -502,6 +576,7 @@
     gap:10px;
     position:relative;
     z-index:2;
+    flex-shrink:0;
   }
   .chat-input-area input {
     flex:1;
@@ -547,12 +622,13 @@
   .chat-loading {
     display:none;
     text-align:center;
-    padding:16px;
+    padding:12px;
     color:#fff;
     font-weight:900;
     letter-spacing:2px;
     text-transform:uppercase;
     font-size:12px;
+    flex-shrink:0;
   }
   .chat-loading.show { display:block; }
   .chat-loading::after {
@@ -727,9 +803,11 @@
     .history-table th, .history-table td { padding:8px 6px; font-size:11px; }
     .task-item { font-size:8.5px; letter-spacing:.3px; }
     .task-item svg { width:20px; height:20px; }
-    .chat-box { min-height:280px; max-height:350px; padding:14px; }
     .message { font-size:12.5px; padding:10px 12px; }
     .chat-input-area button { padding:12px 14px; font-size:11px; }
+    .ai-header { padding:10px 12px; }
+    .ai-header-title { font-size:12px; letter-spacing:2px; }
+    .page#page-ai { padding:14px; }
   }
 </style>
 </head>
@@ -901,12 +979,21 @@
           </div>
         </section>
 
-        <!-- AI ARIEL -->
+        <!-- AI ARIEL FULLSCREEN -->
         <section class="page" id="page-ai">
-          <div class="page-title">
-            <div class="line"></div>
-            <div class="text">AI Ariel</div>
-            <div class="line"></div>
+
+          <div class="ai-header">
+            <div class="ai-header-left">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:36px;">
+                <rect x="6" y="6" width="88" height="88" fill="#dc2626" stroke="#000" stroke-width="6"/>
+                <rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+                <rect x="24" y="26" width="22" height="6" fill="#000"/>
+                <rect x="32" y="26" width="6" height="34" fill="#000"/>
+                <path d="M54 60 L64 26 L74 60 L68 60 L66 52 L62 52 L60 60 Z M63 46 L65 46 L64 40 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/>
+              </svg>
+              <div class="ai-header-title">AI <span>ARIEL</span></div>
+            </div>
+            <button class="ai-close-btn" onclick="tutupAI()" title="Tutup">×</button>
           </div>
 
           <div class="chat-box" id="chatBox">
@@ -1155,7 +1242,26 @@
     for (var j = 0; j < tasks.length; j++) tasks[j].classList.remove('active');
     if (el) el.classList.add('active');
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (name !== 'ai') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Auto focus input AI
+    if (name === 'ai') {
+      setTimeout(function() {
+        document.getElementById('chatInput').focus();
+      }, 300);
+    }
+  }
+
+  function tutupAI() {
+    document.getElementById('page-ai').classList.remove('active');
+    var tasks = document.querySelectorAll('.task-item');
+    for (var j = 0; j < tasks.length; j++) tasks[j].classList.remove('active');
+    document.querySelector('.task-item[data-page="beranda"]').classList.add('active');
+    var pages = document.querySelectorAll('.page');
+    for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+    document.getElementById('page-beranda').classList.add('active');
   }
 
   function toggleFullscreen() {
