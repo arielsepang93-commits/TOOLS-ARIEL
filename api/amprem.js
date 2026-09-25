@@ -29,6 +29,18 @@ export default async function handler(req, res) {
                 const txt = await r.text();
                 let data;
                 try { data = JSON.parse(txt); } catch (e) { data = { raw: txt }; }
+
+                // Deteksi Vercel Security Checkpoint
+                if (txt.includes("Vercel Security Checkpoint") || txt.includes("Just a moment")) {
+                    lastErr = {
+                        ok: false,
+                        status: 403,
+                        data: { pesan: "Situs target dilindungi Vercel Security Checkpoint (bot protection)." },
+                        url
+                    };
+                    continue;
+                }
+
                 if (r.ok) return { ok: true, status: r.status, data, url };
                 lastErr = { ok: false, status: r.status, data, url };
             } catch (e) {
@@ -51,17 +63,17 @@ export default async function handler(req, res) {
                 TARGET + "/api/auth/send-link",
                 TARGET + "/api/send-link",
                 TARGET + "/api/magic-link",
-                TARGET + "/api/auth/magic-link",
-                TARGET + "/api/email/send"
+                TARGET + "/api/auth/magic-link"
             ], { email });
 
             if (!hasil.ok) {
                 return res.status(500).json({
                     sukses: false,
-                    pesan: "Gagal mengirim magic link",
+                    pesan: "Gagal mengirim magic link (situs target memblokir request otomatis).",
                     detail: JSON.stringify(hasil.data, null, 2),
                     lastUrl: hasil.url,
-                    status: hasil.status
+                    status: hasil.status,
+                    solusi: "Situs target dilindungi Vercel Security Checkpoint. Ambil magic link secara manual melalui browser, lalu tempel di kolom OobCode."
                 });
             }
 
@@ -89,14 +101,13 @@ export default async function handler(req, res) {
                 TARGET + "/api/auth/verify",
                 TARGET + "/api/verify",
                 TARGET + "/api/activate",
-                TARGET + "/api/auth/activate",
-                TARGET + "/api/premium/activate"
+                TARGET + "/api/auth/activate"
             ], { email, oobCode });
 
             if (!hasil.ok) {
                 return res.status(500).json({
                     sukses: false,
-                    pesan: "Gagal verifikasi oobCode",
+                    pesan: "Gagal verifikasi oobCode.",
                     detail: JSON.stringify(hasil.data, null, 2),
                     lastUrl: hasil.url,
                     status: hasil.status
