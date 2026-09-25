@@ -715,11 +715,7 @@
     try {
       return JSON.parse(text);
     } catch (e) {
-      if (text.indexOf('The page could not be found') !== -1 ||
-          text.indexOf('404') !== -1) {
-        return { success: false, message: 'Endpoint API tidak ditemukan. Cek folder api/.' };
-      }
-      return { success: false, message: 'Server tidak merespons JSON: ' + text.substring(0, 80) };
+      return { success: false, message: 'Server tidak merespons JSON. Cek endpoint /api/auth.' };
     }
   }
 
@@ -741,7 +737,7 @@
   }
 
   /* ============================================
-     HANDLE LOGIN
+     HANDLE LOGIN — /api/auth?action=login
      ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
@@ -759,7 +755,7 @@
     btn.classList.add('loading');
 
     try {
-      var res = await fetch('/api/login', {
+      var res = await fetch('/api/auth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -790,7 +786,7 @@
   }
 
   /* ============================================
-     HANDLE REGISTER
+     HANDLE REGISTER — /api/auth?action=register
      ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
@@ -817,7 +813,7 @@
     btn.classList.add('loading');
 
     try {
-      var res = await fetch('/api/register', {
+      var res = await fetch('/api/auth?action=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password })
