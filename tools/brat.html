@@ -129,7 +129,25 @@
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+
+  function cariUrl(data) {
+    if (!data) return '';
+    if (typeof data === 'string') {
+      if (data.startsWith('http') || data.startsWith('/api/')) return data;
+      return '';
+    }
+    if (data.data && data.data.image) return data.data.image;
+    if (data.data && data.data.url) return data.data.url;
+    if (data.image) return data.image;
+    if (data.result) {
+      if (typeof data.result === 'string') return data.result;
+      if (data.result.image) return data.result.image;
+      if (data.result.url) return data.result.url;
+    }
+    if (data.url) return data.url;
+    return '';
   }
 
   async function generate() {
@@ -151,13 +169,13 @@
       var res = await fetch('/api/brat?text=' + encodeURIComponent(text));
       var data = await res.json();
 
-      var imageUrl = '';
-      if (data.data && data.data.image) imageUrl = data.data.image;
-      else if (data.image) imageUrl = data.image;
-      else if (data.result) imageUrl = data.result;
-      else if (data.url) imageUrl = data.url;
+      console.log('Response:', data);
 
-      if (!imageUrl) throw new Error('Gambar tidak tersedia');
+      var imageUrl = cariUrl(data);
+
+      if (!imageUrl) {
+        throw new Error(data.message || 'Gambar tidak tersedia');
+      }
 
       var preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
