@@ -181,11 +181,13 @@
         showToast('Gagal: ' + (data.pesan || 'Unknown'));
         var detail = data.detail;
         if (typeof detail === 'object') detail = JSON.stringify(detail, null, 2);
+        var solusiHtml = data.solusi ? '<br><br><strong>Solusi:</strong> ' + escapeHtml(data.solusi) : '';
         showResult(
           '<strong>Gagal mengirim magic link</strong>' +
           '<div class="pre">' + escapeHtml(detail || data.pesan || 'Tidak ada detail') + '</div>' +
           (data.lastUrl ? '<br><strong>Last URL:</strong> ' + escapeHtml(data.lastUrl) : '') +
-          (data.status ? '<br><strong>Status:</strong> ' + escapeHtml(String(data.status)) : '')
+          (data.status ? '<br><strong>Status:</strong> ' + escapeHtml(String(data.status)) : '') +
+          solusiHtml
         );
       }
     } catch (err) {
@@ -229,13 +231,15 @@
         );
       } else {
         showToast('Gagal: ' + (data.pesan || 'Unknown'));
-        var detail = data.detail;
-        if (typeof detail === 'object') detail = JSON.stringify(detail, null, 2);
+        var detail2 = data.detail;
+        if (typeof detail2 === 'object') detail2 = JSON.stringify(detail2, null, 2);
+        var solusiHtml2 = data.solusi ? '<br><br><strong>Solusi:</strong> ' + escapeHtml(data.solusi) : '';
         showResult(
           '<strong>Gagal verifikasi</strong>' +
-          '<div class="pre">' + escapeHtml(detail || data.pesan || 'Tidak ada detail') + '</div>' +
+          '<div class="pre">' + escapeHtml(detail2 || data.pesan || 'Tidak ada detail') + '</div>' +
           (data.lastUrl ? '<br><strong>Last URL:</strong> ' + escapeHtml(data.lastUrl) : '') +
-          (data.status ? '<br><strong>Status:</strong> ' + escapeHtml(String(data.status)) : '')
+          (data.status ? '<br><strong>Status:</strong> ' + escapeHtml(String(data.status)) : '') +
+          solusiHtml2
         );
       }
     } catch (err) {
