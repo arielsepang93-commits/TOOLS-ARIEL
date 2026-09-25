@@ -15,7 +15,10 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, message: "Parameter prompt wajib diisi" });
         }
 
-        const apiUrl = "https://xyloapi.qzz.io/api/ai-chat/aya?prompt=" + encodeURIComponent(prompt);
+        // Paksa AI jawab pakai Bahasa Indonesia
+        const promptFinal = "Jawab dengan Bahasa Indonesia yang santai dan jelas. Pertanyaan: " + prompt;
+
+        const apiUrl = "https://xyloapi.qzz.io/api/ai-chat/aya?prompt=" + encodeURIComponent(promptFinal);
 
         const response = await fetch(apiUrl, {
             method: "GET",
