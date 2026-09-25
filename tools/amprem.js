@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Alight Motion VIP Pro - ToolsAriel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter','Segoe UI',sans-serif; }
+  html, body { min-height:100vh; background:#000; color:#000; overflow-x:hidden; }
+  .bg-video { position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:0; pointer-events:none; filter: blur(8px) saturate(140%); transform: scale(1.08); }
+  .bg-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.4); z-index:1; pointer-events:none; }
+  .app { position:relative; z-index:10; min-height:100vh; padding:24px; }
+  .navbar { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; background:rgba(255,255,255,.85); border:3px solid #000; box-shadow:5px 5px 0 #dc2626; margin-bottom:24px; }
+  .nav-logo { display:flex; align-items:center; gap:10px; }
+  .nav-logo svg { width:36px; height:36px; animation: logoSpin 8s linear infinite; filter:drop-shadow(2px 2px 0 #000); }
+  @keyframes logoSpin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  .nav-logo .brand-text { font-size:14px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:#000; }
+  .nav-logo .brand-text span { color:#dc2626; text-shadow:1.5px 1.5px 0 #000; }
+  .back-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; background:#fff; border:3px solid #000; font-size:11px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 #000; transition:.15s; color:#000; text-decoration:none; }
+  .back-btn:hover { transform:translate(-2px,-2px); box-shadow:5px 5px 0 #000; background:#fef2f2; }
+  .back-btn svg { width:14px; height:14px; fill:#000; }
+  .container { max-width:800px; margin:0 auto; }
+  .page-title { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .page-title .line { flex:1; height:4px; background:#dc2626; border-top:2px solid #000; border-bottom:2px solid #000; }
+  .page-title .text { font-size:13px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:#fff; text-shadow:2px 2px 0 #000; background:#dc2626; padding:7px 16px; border:3px solid #000; box-shadow:4px 4px 0 #000; white-space:nowrap; }
+  .panel { background:rgba(255,255,255,.55); border:4px solid #dc2626; padding:22px; box-shadow:8px 8px 0 #dc2626, 16px 16px 0 #000; position:relative; margin-bottom:22px; }
+  .panel::before { content:''; position:absolute; inset:8px; border:2px solid #dc2626; pointer-events:none; opacity:.4; }
+  .field { margin-bottom:14px; position:relative; z-index:2; }
+  .field label { display:block; font-size:10.5px; font-weight:900; color:#000; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+  .field input { width:100%; padding:14px 16px; border:3px solid #000; font-size:13.5px; font-weight:600; color:#000; outline:none; background:#fff; transition:.2s; font-family:inherit; }
+  .field input::placeholder { color:#999; }
+  .field input:focus { border-color:#dc2626; background:#fff8f8; box-shadow:4px 4px 0 #000; transform:translate(-2px,-2px); }
+  .field-info { font-size:10.5px; color:#666; margin-top:6px; font-weight:600; position:relative; z-index:2; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:2; }
+  .btn { padding:12px 20px; border:3px solid #000; background:#dc2626; color:#fff; font-size:12px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; box-shadow:4px 4px 0 #000; transition:.15s; font-family:inherit; text-decoration:none; display:inline-block; text-align:center; }
+  .btn:hover { background:#b91c1c; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #000; }
+  .btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  .btn.btn-outline { background:#fff; color:#000; }
+  .btn.btn-outline:hover { background:#f3f4f6; }
+  .btn.btn-orange { background:#ffa500; color:#000; }
+  .btn.btn-orange:hover { background:#e59400; }
+  .loading { display:none; text-align:center; padding:30px; color:#fff; font-weight:900; letter-spacing:2px; text-transform:uppercase; font-size:13px; }
+  .loading.show { display:block; }
+  .loading::after { content:''; display:inline-block; width:20px; height:20px; margin-left:12px; border:3px solid #dc2626; border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; vertical-align:middle; }
+  @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  .result { display:none; }
+  .result.show { display:block; animation: pageIn .4s ease; }
+  @keyframes pageIn { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
+  .result-card { background:rgba(255,255,255,.55); border:4px solid #dc2626; padding:20px; box-shadow:8px 8px 0 #dc2626, 16px 16px 0 #000; position:relative; }
+  .result-card::before { content:''; position:absolute; inset:8px; border:2px solid #dc2626; pointer-events:none; opacity:.4; }
+  .result-content { position:relative; z-index:2; font-size:13px; font-weight:600; line-height:1.6; }
+  .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-120px); background:#000; color:#fff; padding:12px 20px; border:3px solid #dc2626; box-shadow:5px 5px 0 #dc2626; font-size:11.5px; font-weight:900; letter-spacing:1px; text-transform:uppercase; z-index:9999; transition:transform .4s cubic-bezier(.3,1.3,.5,1); max-width:90vw; text-align:center; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  @media (max-width:600px){
+    .nav-logo .brand-text { font-size:12px; letter-spacing:2px; }
+    .panel, .result-card { padding:16px; box-shadow:6px 6px 0 #dc2626, 12px 12px 0 #000; }
+    .page-title .text { font-size:11px; letter-spacing:2px; padding:6px 12px; }
+    .btn { padding:11px 14px; font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="../media/background.mp4" type="video/mp4" />
+  </video>
+  <div class="bg-overlay"></div>
+
+  <div class="app">
+
+    <nav class="navbar">
+      <div class="nav-logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" fill="#dc2626" stroke="#000" stroke-width="6"/>
+          <rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+          <rect x="24" y="26" width="22" height="6" fill="#000"/>
+          <rect x="32" y="26" width="6" height="34" fill="#000"/>
+          <path d="M54 60 L64 26 L74 60 L68 60 L66 52 L62 52 L60 60 Z M63 46 L65 46 L64 40 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/>
+        </svg>
+        <div class="brand-text">TOOLS <span>ARIEL</span></div>
+      </div>
+      <a class="back-btn" href="../dashboard.html">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+        Kembali
+      </a>
+    </nav>
+
+    <div class="container">
+
+      <div class="page-title">
+        <div class="line"></div>
+        <div class="text">Alight Motion VIP Pro</div>
+        <div class="line"></div>
+      </div>
+
+      <div class="panel">
+        <div class="field">
+          <label>Email Target</label>
+          <input type="email" id="emailInput" placeholder="contoh: user@gmail.com" />
+          <div class="field-info">Pastikan email aktif dan dapat menerima email dari Alight Motion.</div>
+        </div>
+
+        <div class="field">
+          <label>Magic Link / Kode OobCode</label>
+          <input type="text" id="linkInput" placeholder="Tempel tautan lengkap dari email atau oobCode..." />
+          <div class="field-info">Sistem otomatis mengekstrak parameter oobCode dan melakukan sign-in sekaligus verifikasi paket VIP Pro 1 Tahun.</div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-orange" onclick="kirimLink()">Kirim Magic Link</button>
+          <button class="btn" onclick="verifikasi()">Verifikasi &amp; Aktifkan Premium</button>
+          <button class="btn btn-outline" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">Memproses</div>
+
+      <div class="result" id="result">
+        <div class="result-card">
+          <div id="resultContent" class="result-content"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast">-</div>
+
+<script>
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+
+  function setLoading(on) {
+    var el = document.getElementById('loading');
+    if (on) el.classList.add('show'); else el.classList.remove('show');
+  }
+
+  function showResult(html) {
+    var res = document.getElementById('result');
+    var content = document.getElementById('resultContent');
+    content.innerHTML = html;
+    res.classList.add('show');
+  }
+
+  async function parseResponse(res) {
+    var text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return { sukses: false, pesan: text || 'Server tidak merespons dengan format yang benar' };
+    }
+  }
+
+  async function kirimLink() {
+    var email = document.getElementById('emailInput').value.trim();
+    if (!email) {
+      showToast('Masukkan email target dulu!');
+      return;
+    }
+
+    setLoading(true);
+    document.getElementById('result').classList.remove('show');
+
+    try {
+      var res = await fetch('/api/amprem?action=kirim-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await parseResponse(res);
+
+      if (data.sukses) {
+        showToast('Magic link terkirim!');
+        showResult('<strong>' + data.pesan + '</strong><br><br>Cek inbox atau folder spam email <em>' + email + '</em>.<br>Salin link verifikasi, lalu tempel di kolom Magic Link / OobCode, dan klik <strong>Verifikasi &amp; Aktifkan Premium</strong>.');
+      } else {
+        showToast('Gagal: ' + (data.pesan || 'Unknown error'));
+        showResult('<strong>Gagal mengirim magic link</strong><br>' + (data.detail || data.pesan || ''));
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message);
+      showResult('<strong>Error</strong><br>' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifikasi() {
+    var email = document.getElementById('emailInput').value.trim();
+    var link = document.getElementById('linkInput').value.trim();
+
+    if (!email) {
+      showToast('Masukkan email target dulu!');
+      return;
+    }
+    if (!link) {
+      showToast('Tempel magic link / oobCode dulu!');
+      return;
+    }
+
+    setLoading(true);
+    document.getElementById('result').classList.remove('show');
+
+    try {
+      var res = await fetch('/api/amprem?action=verifikasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, link: link })
+      });
+      var data = await parseResponse(res);
+
+      if (data.sukses) {
+        showToast('Premium VIP aktif!');
+        var d = data.data || {};
+        showResult(
+          '<strong>' + data.pesan + '</strong><br><br>' +
+          '<table style="width:100%; border-collapse:collapse; font-size:12px;">' +
+          '<tr><td style="padding:4px 0;"><strong>Email Target</strong></td><td>' + (d.email_target || email) + '</td></tr>' +
+          '<tr><td style="padding:4px 0;"><strong>UID Firebase</strong></td><td>' + (d.uid_firebase || '-') + '</td></tr>' +
+          '<tr><td style="padding:4px 0;"><strong>Status Akun</strong></td><td>' + (d.status_akun || 'Alight Motion Pro VIP') + '</td></tr>' +
+          '<tr><td style="padding:4px 0;"><strong>Order ID</strong></td><td>' + (d.order_id_aktivasi || '-') + '</td></tr>' +
+          '<tr><td style="padding:4px 0;"><strong>Masa Berlaku</strong></td><td>' + (d.masa_berlaku_vip || '25 September 2027') + '</td></tr>' +
+          '<tr><td style="padding:4px 0;"><strong>Token Type</strong></td><td>' + (d.token_type || 'Bearer') + '</td></tr>' +
+          '</table>'
+        );
+      } else {
+        showToast('Gagal: ' + (data.pesan || 'Unknown error'));
+        showResult('<strong>Gagal verifikasi</strong><br>' + (data.detail || data.pesan || ''));
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message);
+      showResult('<strong>Error</strong><br>' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('emailInput').value = '';
+    document.getElementById('linkInput').value = '';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  document.getElementById('emailInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') kirimLink();
+  });
+  document.getElementById('linkInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') verifikasi();
+  });
+</script>
+
+</body>
+</html>
