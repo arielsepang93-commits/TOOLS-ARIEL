@@ -725,7 +725,7 @@ async function handleFakeLobbyML(req, res) {
     return res.status(400).json({ success: false, message: 'Parameter nickname & avatar wajib diisi' });
   }
   const apiPath = '/maker/fakelobyml?nickname=' + encodeURIComponent(nickname) + '&avatar=' + encodeURIComponent(avatar);
-  return proxyNexrayImage(res, apiPath, 25000);
+  return proxyNexrayImage(res, apiPath, 30000);
 }
 // ===== [MARKER-FAKELOBBYML-END] =====
 
@@ -789,7 +789,7 @@ async function handleWebToZip(req, res) {
 
 
 // ============================================================
-// ===== [MARKER-CATBOX] CATBOX UPLOAD PROXY =====
+// ===== [MARKER-CATBOX] CATBOX UPLOAD PROXY (Base64 JSON) =====
 // ============================================================
 async function handleCatboxUpload(req, res) {
   if (req.method !== 'POST') {
@@ -797,27 +797,47 @@ async function handleCatboxUpload(req, res) {
   }
 
   try {
-    const chunks = [];
-    await new Promise((resolve, reject) => {
-      req.on('data', (c) => chunks.push(c));
-      req.on('end', resolve);
-      req.on('error', reject);
-    });
-    const rawBody = Buffer.concat(chunks);
+    const { filename, contentType, data } = req.body || {};
+
+    if (!data) {
+      return res.status(400).json({ success: false, message: 'Data file wajib diisi' });
+    }
+
+    // Ubah base64 jadi Buffer
+    const buffer = Buffer.from(data, 'base64');
+
+    // Cek ukuran (biar gak kebuang waktu kalau gede banget)
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(413).json({
+        success: false,
+        message: 'File terlalu besar (max 5MB)'
+      });
+    }
+
+    // Kirim ke Catbox via FormData server-to-server
+    const blob = new Blob([buffer], { type: contentType || 'application/octet-stream' });
+    const form = new FormData();
+    form.append('reqtype', 'fileupload');
+    form.append('fileToUpload', blob, filename || 'file.png');
 
     const catboxRes = await fetch('https://catbox.moe/user/api.php', {
       method: 'POST',
-      headers: { 'Content-Type': req.headers['content-type'] || 'multipart/form-data' },
-      body: rawBody,
-      signal: AbortSignal.timeout(30000)
+      body: form,
+      signal: AbortSignal.timeout(60000)
     });
 
     const url = await catboxRes.text();
+
     if (!url || !url.startsWith('http')) {
-      return res.status(500).json({ success: false, message: 'Catbox gagal upload', raw: url });
+      return res.status(500).json({
+        success: false,
+        message: 'Catbox gagal upload',
+        raw: url.substring(0, 200)
+      });
     }
 
     return res.status(200).json({ success: true, url: url.trim() });
+
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -846,7 +866,7 @@ export default async function handler(req, res) {
     // TELEGRAM (POST only)
     if (action === 'telegram') return await handleTelegram(req, res);
 
-    // CATBOX UPLOAD (POST only)
+    // CATBOX UPLOAD (POST only, JSON + base64)
     if (action === 'catboxupload') return await handleCatboxUpload(req, res);
 
     // Semua action lain butuh GET
