@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fake Bank Jago - ToolsAriel</title>
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+<video class="bg-video" autoplay muted loop playsinline><source src="../media/background.mp4" type="video/mp4" /></video>
+<div class="bg-overlay"></div>
+<div class="app">
+<nav class="navbar">
+<div class="nav-logo">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<rect x="6" y="6" width="88" height="88" fill="#dc2626" stroke="#000" stroke-width="6"/>
+<rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+<rect x="24" y="26" width="22" height="6" fill="#000"/>
+<rect x="32" y="26" width="6" height="34" fill="#000"/>
+<path d="M54 60 L64 26 L74 60 L68 60 L66 52 L62 52 L60 60 Z M63 46 L65 46 L64 40 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/>
+</svg>
+<div class="brand-text">TOOLS <span>ARIEL</span></div>
+</div>
+<a class="back-btn" href="../dashboard.html">
+<svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+Kembali
+</a>
+</nav>
+<div class="container">
+<div class="page-title"><div class="line"></div><div class="text">Fake Bank Jago</div><div class="line"></div></div>
+<div class="panel">
+<div class="field">
+<label>Nama</label>
+<input type="text" id="namaInput" placeholder="Contoh: Ariel" />
+</div>
+<div class="field">
+<label>Saldo</label>
+<input type="number" id="saldoInput" placeholder="Contoh: 1000000" />
+<div class="field-info">Generator saldo Bank Jago untuk keperluan candaan</div>
+</div>
+<div class="actions">
+<button class="btn" id="btnGen" onclick="generate()">Buat Gambar</button>
+<button class="btn btn-outline" onclick="resetForm()">Reset</button>
+</div>
+</div>
+<div class="loading" id="loading">Merender</div>
+<div class="result" id="result"><div class="result-card" id="resultCard"></div></div>
+</div>
+</div>
+<div class="toast" id="toast">-</div>
+<script>
+var toastTimer=null;
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},3000)}
+function setLoading(on){document.getElementById('loading').classList.toggle('show',on);document.getElementById('btnGen').disabled=on}
+function resetForm(){document.getElementById('namaInput').value='';document.getElementById('saldoInput').value='';document.getElementById('result').classList.remove('show')}
+
+async function generate(){
+  var nama=document.getElementById('namaInput').value.trim();
+  var saldo=document.getElementById('saldoInput').value.trim();
+  if(!nama||!saldo){showToast('Nama dan saldo wajib diisi!');return}
+  setLoading(true);document.getElementById('result').classList.remove('show');
+  try{
+    var r=await fetch('/api/tools?action=fakebankjago&nama='+encodeURIComponent(nama)+'&saldo='+encodeURIComponent(saldo));
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var blob=await r.blob();
+    var url=URL.createObjectURL(blob);
+    document.getElementById('resultCard').innerHTML=
+      '<img class="center-img" src="'+url+'" alt="Fake Bank Jago">'+
+      '<a class="download-btn" href="'+url+'" download="fakebankjago_'+Date.now()+'.png">Download Gambar</a>';
+    setLoading(false);document.getElementById('result').classList.add('show');showToast('Berhasil!');
+  }catch(err){setLoading(false);showToast('Error: '+err.message);
+    document.getElementById('resultCard').innerHTML='<div class="error-box">'+err.message+'</div>';
+    document.getElementById('result').classList.add('show')}
+}
+document.getElementById('saldoInput').addEventListener('keydown',function(e){if(e.key==='Enter')generate()});
+</script>
+</body>
+</html>

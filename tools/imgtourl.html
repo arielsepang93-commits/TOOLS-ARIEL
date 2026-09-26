@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Img to URL - ToolsAriel</title>
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+<video class="bg-video" autoplay muted loop playsinline><source src="../media/background.mp4" type="video/mp4" /></video>
+<div class="bg-overlay"></div>
+<div class="app">
+<nav class="navbar">
+<div class="nav-logo">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<rect x="6" y="6" width="88" height="88" fill="#dc2626" stroke="#000" stroke-width="6"/>
+<rect x="16" y="16" width="68" height="68" fill="#ffffff" stroke="#000" stroke-width="4"/>
+<rect x="24" y="26" width="22" height="6" fill="#000"/>
+<rect x="32" y="26" width="6" height="34" fill="#000"/>
+<path d="M54 60 L64 26 L74 60 L68 60 L66 52 L62 52 L60 60 Z M63 46 L65 46 L64 40 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/>
+</svg>
+<div class="brand-text">TOOLS <span>ARIEL</span></div>
+</div>
+<a class="back-btn" href="../dashboard.html">
+<svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+Kembali
+</a>
+</nav>
+<div class="container">
+<div class="page-title"><div class="line"></div><div class="text">Img to URL</div><div class="line"></div></div>
+<div class="panel">
+<div class="field">
+<label>Upload Gambar</label>
+<input type="file" id="fileInput" accept="image/*" style="padding:10px;" />
+<div class="field-info">Upload gambar, dapatkan link publik (Catbox.moe)</div>
+</div>
+<div class="actions">
+<button class="btn" id="btnUp" onclick="uploadGambar()">Upload & Ambil Link</button>
+<button class="btn btn-outline" onclick="resetForm()">Reset</button>
+</div>
+</div>
+<div class="loading" id="loading">Mengupload</div>
+<div class="result" id="result"><div class="result-card" id="resultCard"></div></div>
+</div>
+</div>
+<div class="toast" id="toast">-</div>
+<script>
+var toastTimer=null;
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},3000)}
+function setLoading(on){document.getElementById('loading').classList.toggle('show',on);document.getElementById('btnUp').disabled=on}
+function escapeHtml(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function resetForm(){document.getElementById('fileInput').value='';document.getElementById('result').classList.remove('show')}
+
+async function uploadGambar(){
+  var file=document.getElementById('fileInput').files[0];
+  if(!file){showToast('Pilih gambar dulu!');return}
+  setLoading(true);document.getElementById('result').classList.remove('show');
+  try{
+    var form=new FormData();
+    form.append('file',file,file.name||'image.png');
+    var r=await fetch('/api/tools?action=catboxupload',{method:'POST',body:form});
+    var data=await r.json();
+    if(!data.success||!data.url)throw new Error(data.message||'Upload gagal');
+    var url=data.url;
+    document.getElementById('resultCard').innerHTML=
+      '<img class="center-img" src="'+escapeHtml(url)+'" alt="Result" style="max-height:220px;object-fit:contain;background:#111;margin-bottom:12px;">'+
+      '<div style="display:flex;gap:8px;align-items:center;border:3px solid #000;background:#fff;padding:10px 12px;position:relative;z-index:2;">'+
+        '<input type="text" readonly value="'+escapeHtml(url)+'" style="flex:1;border:none;outline:none;font-size:12.5px;font-weight:700;background:transparent;" onclick="this.select()">'+
+        '<button class="btn" style="padding:8px 12px;font-size:10px;flex-shrink:0;" onclick="copyLink(\''+url+'\')">Salin</button>'+
+      '</div>';
+    setLoading(false);document.getElementById('result').classList.add('show');showToast('Upload berhasil!');
+  }catch(err){setLoading(false);showToast('Error: '+err.message);
+    document.getElementById('resultCard').innerHTML='<div class="error-box">'+err.message+'</div>';
+    document.getElementById('result').classList.add('show')}
+}
+function copyLink(url){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){showToast('Link disalin!')}).catch(function(){showToast('Gagal menyalin')});
+  }else{showToast('Clipboard tidak didukung')}
+}
+</script>
+</body>
+</html>
