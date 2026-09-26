@@ -178,7 +178,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .mini-btn:hover{background:#b91c1c}
 .mini-btn svg{width:16px;height:16px;fill:currentColor}
 
-/* TOOL MODAL IFRAME */
+/* IFRAME MODAL */
 .tool-modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9997;display:none;flex-direction:column;padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .tool-modal.active{display:flex}
 .tool-modal-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#dc2626;border:3px solid #000;box-shadow:4px 4px 0 #000;margin-bottom:10px;flex-shrink:0}
@@ -545,7 +545,6 @@ input,textarea{-webkit-user-select:text;user-select:text}
 </div>
 </div>
 
-<!-- TOOL MODAL IFRAME -->
 <div class="tool-modal" id="toolModal">
 <div class="tool-modal-header">
 <span class="tool-modal-title" id="toolModalTitle">Tool</span>
@@ -554,7 +553,6 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <iframe class="tool-modal-frame" id="toolFrame" src="about:blank"></iframe>
 </div>
 
-<!-- AI PAGE -->
 <section id="page-ai">
 <div class="ai-header">
 <div class="ai-header-left">
@@ -579,7 +577,6 @@ input,textarea{-webkit-user-select:text;user-select:text}
 </div>
 </section>
 
-<!-- MINI PLAYER -->
 <div class="mini-player" id="miniPlayer">
 <div class="mini-cover" id="miniCover">
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -704,34 +701,8 @@ else{navBtn.classList.remove('active');if(playIcon)playIcon.innerHTML=playSvg;if
 function updateMiniPlayer(){var mini=document.getElementById('miniPlayer');var onMusicPage=document.getElementById('page-music').classList.contains('active');
 if(musicPlaying&&!onMusicPage)mini.classList.add('show');else mini.classList.remove('show')}
 
-function playVideo(){
-  if(!musicVideo)return;
-  musicVideo.muted=true;
-  musicVideo.volume=0;
-  var p=musicVideo.play();
-  if(p&&p.catch)p.catch(function(err){
-    console.warn('Video play error:',err);
-    // Fallback: coba play lagi setelah 500ms
-    setTimeout(function(){
-      musicVideo.play().catch(function(){});
-    },500);
-  });
-}
+function playVideo(){if(!musicVideo)return;musicVideo.muted=true;musicVideo.volume=0;var p=musicVideo.play();if(p&&p.catch)p.catch(function(){setTimeout(function(){musicVideo.play().catch(function(){})},500)})}
 function pauseVideo(){if(!musicVideo)return;musicVideo.pause()}
-
-// Video auto init saat page load
-window.addEventListener('load',function(){
-  if(musicVideo){
-    musicVideo.muted=true;
-    musicVideo.volume=0;
-    musicVideo.play().then(function(){
-      // Kalau auto-play berhasil, langsung pause (nunggu audio)
-      musicVideo.pause();
-    }).catch(function(){
-      // Autoplay diblokir, biarkan nanti dipicu audio
-    });
-  }
-});
 
 function toggleMusic(){if(audio.paused){audio.play().then(function(){musicPlaying=true;playVideo();updatePlayIcons(true);updateMiniPlayer()}).catch(function(err){showToast('Gagal play: '+err.message)})}
 else{audio.pause();musicPlaying=false;pauseVideo();updatePlayIcons(false);updateMiniPlayer()}}
@@ -750,12 +721,11 @@ audio.addEventListener('timeupdate',function(){if(audio.duration){var pct=(audio
 audio.addEventListener('loadedmetadata',function(){document.getElementById('musicDuration').textContent=fmtTime(audio.duration)});
 audio.addEventListener('play',function(){musicPlaying=true;updatePlayIcons(true);updateMiniPlayer();playVideo()});
 audio.addEventListener('pause',function(){musicPlaying=false;updatePlayIcons(false);updateMiniPlayer();pauseVideo()});
-audio.addEventListener('error',function(){document.getElementById('musicTitle').textContent='bye [Altare Remix]';document.getElementById('musicArtist').textContent='Ariana Grande';document.getElementById('musicTopTitle').textContent='Ariana Grande - bye [Altare Remix]';document.getElementById('miniTitle').textContent='bye [Altare Remix]';document.getElementById('miniArtist').textContent='Ariana Grande'});
 
 /* LOAD LIRIK */
 fetch('media/lyrics.txt').then(function(r){return r.text()}).then(function(t){var el=document.getElementById('musicLyrics');if(el&&t.trim())el.textContent=t}).catch(function(){});
 
-/* COVER ART (opsional) */
+/* COVER ART */
 var coverImg=new Image();
 coverImg.src='media/music.jpg';
 coverImg.alt='Cover';
@@ -765,7 +735,16 @@ coverImg.style.objectFit='cover';
 coverImg.style.display='block';
 coverImg.onload=function(){var ph=document.getElementById('musicCoverPlaceholder');if(ph)ph.replaceWith(coverImg)};
 
-/* ============ IFRAME MODAL ============ */
+/* INIT VIDEO */
+window.addEventListener('load',function(){
+if(musicVideo){
+musicVideo.muted=true;
+musicVideo.volume=0;
+musicVideo.play().then(function(){musicVideo.pause()}).catch(function(){});
+}
+});
+
+/* IFRAME MODAL */
 function openToolModal(url,title){document.getElementById('toolModalTitle').textContent=title||'Tool';document.getElementById('toolFrame').src=url;document.getElementById('toolModal').classList.add('active')}
 function closeToolModal(){document.getElementById('toolFrame').src='about:blank';document.getElementById('toolModal').classList.remove('active')}
 
