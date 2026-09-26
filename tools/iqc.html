@@ -32,27 +32,7 @@ Kembali
 <div class="field">
 <label>Teks Pesan</label>
 <input type="text" id="iqcText" placeholder="Hai" value="Hai" />
-</div>
-<div class="field">
-<label>Provider Seluler</label>
-<div class="provider-grid">
-<button class="provider-btn active" data-p="Axis" onclick="setProv(this)">Axis</button>
-<button class="provider-btn" data-p="Telkomsel" onclick="setProv(this)">Telkomsel</button>
-<button class="provider-btn" data-p="Indosat" onclick="setProv(this)">Indosat</button>
-<button class="provider-btn" data-p="XL" onclick="setProv(this)">XL</button>
-<button class="provider-btn" data-p="Three" onclick="setProv(this)">Three</button>
-<button class="provider-btn" data-p="Smartfren" onclick="setProv(this)">Smartfren</button>
-</div>
-</div>
-<div class="row2">
-<div class="field">
-<label>Jam</label>
-<input type="number" id="iqcJam" value="12" min="0" max="23" />
-</div>
-<div class="field">
-<label>Baterai (%)</label>
-<input type="number" id="iqcBaterai" value="65" min="0" max="100" />
-</div>
+<div class="field-info">Teks akan muncul di chat bubble</div>
 </div>
 <div class="actions">
 <button class="btn" id="btnGen" onclick="generate()">Generate</button>
@@ -66,30 +46,41 @@ Kembali
 <div class="toast" id="toast">-</div>
 <script>
 var toastTimer=null;
-var currentProv='Axis';
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},3000)}
 function setLoading(on){document.getElementById('loading').classList.toggle('show',on);document.getElementById('btnGen').disabled=on}
-function setProv(btn){document.querySelectorAll('.provider-btn').forEach(function(b){b.classList.remove('active')});btn.classList.add('active');currentProv=btn.dataset.p}
-function resetForm(){document.getElementById('iqcText').value='Hai';document.getElementById('iqcJam').value=12;document.getElementById('iqcBaterai').value=65;document.getElementById('result').classList.remove('show')}
+function resetForm(){document.getElementById('iqcText').value='Hai';document.getElementById('result').classList.remove('show')}
 
 async function generate(){
   var text=document.getElementById('iqcText').value.trim()||'Hai';
-  var jam=document.getElementById('iqcJam').value||'12';
-  var bat=document.getElementById('iqcBaterai').value||'65';
   setLoading(true);document.getElementById('result').classList.remove('show');
   try{
-    var r=await fetch('/api/tools?action=iqc&text='+encodeURIComponent(text)+'&provider='+encodeURIComponent(currentProv)+'&jam='+encodeURIComponent(jam)+'&baterai='+encodeURIComponent(bat));
+    var r=await fetch('/api/tools?action=iqc&text='+encodeURIComponent(text));
     if(!r.ok)throw new Error('HTTP '+r.status);
+
+    var ct=r.headers.get('content-type')||'';
+    if(!ct.startsWith('image/')){
+      var errText='';
+      try{
+        var j=await r.json();
+        errText=j.message||JSON.stringify(j).substring(0,200);
+      }catch(e){errText='Response bukan gambar';}
+      throw new Error(errText);
+    }
+
     var blob=await r.blob();
     var url=URL.createObjectURL(blob);
     document.getElementById('resultCard').innerHTML=
       '<img class="center-img" src="'+url+'" alt="IQC">'+
       '<a class="download-btn" href="'+url+'" download="IQC_'+Date.now()+'.png">Download PNG</a>';
     setLoading(false);document.getElementById('result').classList.add('show');showToast('Berhasil!');
-  }catch(err){setLoading(false);showToast('Error: '+err.message);
+  }catch(err){
+    setLoading(false);showToast('Error: '+err.message);
     document.getElementById('resultCard').innerHTML='<div class="error-box">'+err.message+'</div>';
-    document.getElementById('result').classList.add('show')}
+    document.getElementById('result').classList.add('show');
+  }
 }
+
+document.getElementById('iqcText').addEventListener('keydown',function(e){if(e.key==='Enter')generate()});
 </script>
 </body>
 </html>
