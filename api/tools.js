@@ -787,7 +787,7 @@ async function handleWebToZip(req, res) {
 
 
 // ============================================================
-// ===== [MARKER-CATBOX] CATBOX UPLOAD PROXY (Base64 JSON) =====
+// ===== [MARKER-CATBOX] FILE UPLOAD PROXY (Catbox + Litterbox Fallback) =====
 // ============================================================
 async function handleCatboxUpload(req, res) {
   if (req.method !== 'POST') {
@@ -808,26 +808,51 @@ async function handleCatboxUpload(req, res) {
     }
 
     const blob = new Blob([buffer], { type: contentType || 'application/octet-stream' });
+
+    // ---- Coba Catbox dulu ----
+    let result = await tryUpload('https://catbox.moe/user/api.php', blob, filename, false);
+
+    // ---- Kalau gagal, fallback ke Litterbox (expired 3 hari) ----
+    if (!result.success) {
+      console.log('Catbox gagal, coba Litterbox...');
+      result = await tryUpload('https://litterbox.catbox.moe/resources/internals/api.php', blob, filename, true);
+    }
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: result.message || 'Semua server upload gagal' });
+    }
+
+    return res.status(200).json({ success: true, url: result.url });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async function tryUpload(endpoint, blob, filename, isLitterbox) {
+  try {
     const form = new FormData();
     form.append('reqtype', 'fileupload');
+    if (isLitterbox) {
+      form.append('time', '72h'); // expired 3 hari
+    }
     form.append('fileToUpload', blob, filename || 'file.png');
 
-    const catboxRes = await fetch('https://catbox.moe/user/api.php', {
+    const r = await fetch(endpoint, {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(60000)
     });
 
-    const url = await catboxRes.text();
+    const text = await r.text();
 
-    if (!url || !url.startsWith('http')) {
-      return res.status(500).json({ success: false, message: 'Catbox gagal upload', raw: url.substring(0, 200) });
+    if (!text || !text.startsWith('http')) {
+      return { success: false, message: 'Upload gagal: ' + text.substring(0, 100) };
     }
 
-    return res.status(200).json({ success: true, url: url.trim() });
-
+    return { success: true, url: text.trim() };
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return { success: false, message: err.message };
   }
 }
 // ===== [MARKER-CATBOX-END] =====
