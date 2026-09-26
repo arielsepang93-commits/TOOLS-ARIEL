@@ -555,6 +555,107 @@ async function handleTelegram(req, res) {
   }
 }
 
+// ============ SPOTIFY ============
+async function handleSpotify(req, res) {
+  const { url, server } = req.query;
+  if (!url) return res.status(400).json({ success: false, message: 'Parameter url wajib diisi' });
+  if (!url.includes('spotify.com')) {
+    return res.status(400).json({ success: false, message: 'URL harus dari Spotify' });
+  }
+
+  const serverPilihan = server || 'server1';
+  const apiUrl = 'https://xyloapi.qzz.io/api/downloader/spotify?url=' + encodeURIComponent(url) + '&server=' + encodeURIComponent(serverPilihan);
+
+  const response = await fetch(apiUrl, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'application/json, text/plain, */*'
+    },
+    signal: AbortSignal.timeout(30000)
+  });
+
+  const textResp = await response.text();
+  let data;
+  try { data = JSON.parse(textResp); } catch (e) {
+    return res.status(500).json({ success: false, message: 'Response bukan JSON', raw: textResp.substring(0, 300) });
+  }
+
+  if (data.status === false || data.success === false) {
+    return res.status(200).json({ success: false, message: data.message || data.msg || 'API gagal memproses' });
+  }
+
+  function findDownloadUrl(raw) {
+    if (!raw || typeof raw !== 'object') return '';
+    const candidates = [
+      raw.download, raw.download_url, raw.downloadUrl, raw.url_audio, raw.urlAudio,
+      raw.audio, raw.audio_url, raw.audioUrl, raw.mp3, raw.mp3_url, raw.mp3Url,
+      raw.link, raw.link_download, raw.linkDownload, raw.url
+    ];
+    for (const c of candidates) {
+      if (typeof c === 'string' && c.startsWith('http')) return c;
+      if (c && typeof c === 'object') {
+        const inner = c.mp3 || c.url || c.link || c.audio || c.download || c.href;
+        if (typeof inner === 'string' && inner.startsWith('http')) return inner;
+      }
+    }
+    const arrs = [raw.downloads, raw.medias, raw.media, raw.links, raw.formats];
+    for (const arr of arrs) {
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          if (typeof item === 'string' && item.startsWith('http')) return item;
+          if (item && typeof item === 'object') {
+            const u = item.url || item.link || item.href || item.download;
+            if (typeof u === 'string' && u.startsWith('http')) return u;
+          }
+        }
+      }
+    }
+    for (const key in raw) {
+      if (raw.hasOwnProperty(key)) {
+        const v = raw[key];
+        const lk = key.toLowerCase();
+        if (typeof v === 'string' && v.startsWith('http') && (
+          lk.includes('download') || lk.includes('audio') ||
+          lk.includes('mp3') || lk.includes('link') || lk.includes('url')
+        )) return v;
+      }
+    }
+    return '';
+  }
+
+  function normalizeTrack(raw) {
+    let artist = raw.artist || raw.artists || raw.creator || raw.author || raw.channel || 'Unknown Artist';
+    if (Array.isArray(artist)) {
+      artist = artist.map(a => typeof a === 'object' ? (a.name || a.title || '') : a).filter(Boolean).join(', ');
+    } else if (typeof artist === 'object') {
+      artist = artist.name || artist.title || 'Unknown Artist';
+    }
+    let duration = raw.duration || raw.length || raw.duration_ms || '-';
+    if (typeof duration === 'number' && duration > 1000) {
+      const totalSec = Math.floor(duration / 1000);
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      duration = m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    return {
+      title: raw.title || raw.name || raw.track || raw.song || 'Unknown Title',
+      artist: artist,
+      thumbnail: raw.thumbnail || raw.image || raw.cover || raw.album_art || raw.albumArt || '',
+      duration: duration,
+      album: raw.album || raw.album_name || '',
+      description: raw.description || raw.desc || '',
+      download: findDownloadUrl(raw),
+      raw: raw
+    };
+  }
+
+  const rawData = data.result || data.data || data;
+  const normalized = normalizeTrack(rawData);
+
+  return res.status(200).json({ success: true, result: normalized });
+}
+
 // ============ TIKTOK ============
 async function handleTiktok(req, res) {
   const { url, server } = req.query;
