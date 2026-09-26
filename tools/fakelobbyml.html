@@ -77,25 +77,67 @@ async function uploadToCatbox(file){
   return result.url;
 }
 
+// Helper: baca error dari respons yang bukan gambar
+async function bacaErrorResponse(r){
+  var ct=r.headers.get('content-type')||'';
+  if(ct.includes('application/json')){
+    try{
+      var j=await r.json();
+      return j.message||j.error||JSON.stringify(j).substring(0,200);
+    }catch(e){}
+  }
+  var txt=await r.text();
+  // Coba extract dari JSON Cloudflare
+  try{
+    var j2=JSON.parse(txt);
+    if(j2.detail)return j2.detail;
+    if(j2.title)return j2.title;
+    if(j2.message)return j2.message;
+  }catch(e){}
+  return txt.substring(0,200)||('HTTP '+r.status);
+}
+
 async function generate(){
   var nickname=document.getElementById('nickname').value.trim();
   var file=document.getElementById('avatarFile').files[0];
   if(!nickname){showToast('Masukkan nickname!');return}
   if(!file){showToast('Pilih foto profil!');return}
   setLoading(true);document.getElementById('result').classList.remove('show');
+
   try{
+    // 1. Upload ke Catbox
     var catboxUrl=await uploadToCatbox(file);
+
+    // 2. Minta NexRay generate gambar
     var r=await fetch('/api/tools?action=fakelobbyml&nickname='+encodeURIComponent(nickname)+'&avatar='+encodeURIComponent(catboxUrl));
-    if(!r.ok)throw new Error('HTTP '+r.status);
+
+    // 3. Cek apakah respons benar-benar gambar
+    var ct=r.headers.get('content-type')||'';
+    if(!ct.startsWith('image/')){
+      var errMsg=await bacaErrorResponse(r);
+      if(r.status===502||r.status===503||r.status===504){
+        throw new Error('Server gambar lagi sibuk/down. Coba lagi beberapa menit.');
+      }
+      throw new Error(errMsg);
+    }
+
+    // 4. Render gambar
     var blob=await r.blob();
     var url=URL.createObjectURL(blob);
     document.getElementById('resultCard').innerHTML=
       '<img class="center-img" src="'+url+'" alt="Fake Lobby ML">'+
       '<a class="download-btn" href="'+url+'" download="fakelobbyml_'+Date.now()+'.png">Download Gambar</a>';
     setLoading(false);document.getElementById('result').classList.add('show');showToast('Berhasil!');
-  }catch(err){setLoading(false);showToast('Error: '+err.message);
-    document.getElementById('resultCard').innerHTML='<div class="error-box">'+err.message+'</div>';
-    document.getElementById('result').classList.add('show')}
+
+  }catch(err){
+    setLoading(false);showToast('Error: '+err.message);
+    document.getElementById('resultCard').innerHTML=
+      '<div class="error-box" style="text-align:center;">'+
+        '<div style="margin-bottom:10px;">'+err.message+'</div>'+
+        '<button class="btn" style="width:auto;padding:10px 18px;font-size:11px;" onclick="generate()">Coba Lagi</button>'+
+      '</div>';
+    document.getElementById('result').classList.add('show');
+  }
 }
 </script>
 </body>
