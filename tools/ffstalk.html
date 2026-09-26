@@ -112,45 +112,53 @@ var uid=document.getElementById('uidInput').value.trim();
 if(!uid){showToast('Masukkan UID Free Fire dulu!');return}
 setLoading(true);document.getElementById('result').classList.remove('show');
 try{
-// ===== [ENDPOINT-UPDATE] =====
+// ===== [ENDPOINT] =====
 var res=await fetch('/api/tools?action=ffstalk&userId='+encodeURIComponent(uid));
 var text=await res.text();var data;
 try{data=JSON.parse(text)}catch(e){
 showToast('Response tidak valid');
 document.getElementById('resultCard').innerHTML='<div class="error-box">Response server tidak valid</div>';
 document.getElementById('result').classList.add('show');setLoading(false);return}
-if(!data.status||!data.result){
+
+if(!data.status || !data.result){
 showToast('Gagal: '+(data.message||'Data tidak ditemukan'));
 document.getElementById('resultCard').innerHTML='<div class="error-box">'+escapeHtml(data.message||'Akun tidak ditemukan atau API down')+'</div>';
 document.getElementById('result').classList.add('show');setLoading(false);return}
+
 renderResult(data.result);
 setLoading(false);document.getElementById('result').classList.add('show');showToast('Berhasil!');
 }catch(err){setLoading(false);showToast('Error: '+err.message);document.getElementById('resultCard').innerHTML='<div class="error-box">'+escapeHtml(err.message)+'</div>';document.getElementById('result').classList.add('show')}}
 
 function renderResult(r){
-var nick=r.nickname||r.name||r.username||'Unknown';
-var uid=r.uid||r.account_id||'-';
-var level=r.level||r.account_level||'-';
-var rank=r.rank||r.rank_name||'-';
-var guild=r.guild||r.guild_name||r.clan||'-';
-var signature=r.signature||r.bio||'-';
-var region=r.region||r.server||'-';
-var created=r.created_at||r.created||'-';
-var avatar=r.avatar||r.icon||r.profile_pic||'';
-var initial=nick.charAt(0).toUpperCase();
-var avatarHtml=avatar
-?'<div class="profile-avatar"><img src="'+escapeHtml(avatar)+'" onerror="this.parentNode.textContent=\''+escapeHtml(initial)+'\'"></div>'
-:'<div class="profile-avatar">'+escapeHtml(initial)+'</div>';
-var html='<div class="profile-header">'+avatarHtml+'<div class="profile-info"><div class="profile-nick">'+escapeHtml(nick)+'</div><div class="profile-uid">UID: '+escapeHtml(uid)+'</div></div></div>'+
-'<table class="info-table">'+
-'<tr><td>Level</td><td>'+escapeHtml(level)+'</td></tr>'+
-'<tr><td>Rank</td><td>'+escapeHtml(rank)+'</td></tr>'+
-'<tr><td>Guild</td><td>'+escapeHtml(guild)+'</td></tr>'+
-'<tr><td>Region</td><td>'+escapeHtml(region)+'</td></tr>'+
-'<tr><td>Signature</td><td>'+escapeHtml(signature)+'</td></tr>'+
-'<tr><td>Dibuat</td><td>'+escapeHtml(created)+'</td></tr>'+
+// ===== [FIELD-MAPPING] BACA FIELD DARI API =====
+var nick = r.Username || r.username || r.nickname || r.name || 'Tidak tersedia';
+var uid  = r.id || r.uid || r.account_id || '-';
+
+if(nick === 'Tidak tersedia' && uid === '-'){
+document.getElementById('resultCard').innerHTML = '<div class="error-box">Data akun tidak lengkap dari API</div>';
+return;
+}
+
+var initial = nick.charAt(0).toUpperCase();
+var avatarHtml = '<div class="profile-avatar">' + escapeHtml(initial) + '</div>';
+
+var html = '<div class="profile-header">' +
+  avatarHtml +
+  '<div class="profile-info">' +
+    '<div class="profile-nick">' + escapeHtml(nick) + '</div>' +
+    '<div class="profile-uid">UID: ' + escapeHtml(uid) + '</div>' +
+  '</div>' +
+'</div>' +
+'<table class="info-table">' +
+  '<tr><td>Level</td><td>' + escapeHtml(r.level || '-') + '</td></tr>' +
+  '<tr><td>Rank</td><td>' + escapeHtml(r.rank || '-') + '</td></tr>' +
+  '<tr><td>Guild</td><td>' + escapeHtml(r.guild || '-') + '</td></tr>' +
+  '<tr><td>Region</td><td>' + escapeHtml(r.region || '-') + '</td></tr>' +
+  '<tr><td>Signature</td><td>' + escapeHtml(r.signature || '-') + '</td></tr>' +
+  '<tr><td>Dibuat</td><td>' + escapeHtml(r.created_at || '-') + '</td></tr>' +
 '</table>';
-document.getElementById('resultCard').innerHTML=html;
+
+document.getElementById('resultCard').innerHTML = html;
 }
 
 document.getElementById('uidInput').addEventListener('keydown',function(e){if(e.key==='Enter')stalkFF()});
