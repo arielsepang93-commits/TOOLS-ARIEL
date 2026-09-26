@@ -704,8 +704,34 @@ else{navBtn.classList.remove('active');if(playIcon)playIcon.innerHTML=playSvg;if
 function updateMiniPlayer(){var mini=document.getElementById('miniPlayer');var onMusicPage=document.getElementById('page-music').classList.contains('active');
 if(musicPlaying&&!onMusicPage)mini.classList.add('show');else mini.classList.remove('show')}
 
-function playVideo(){if(!musicVideo)return;musicVideo.muted=true;musicVideo.volume=0;var p=musicVideo.play();if(p&&p.catch)p.catch(function(){})}
+function playVideo(){
+  if(!musicVideo)return;
+  musicVideo.muted=true;
+  musicVideo.volume=0;
+  var p=musicVideo.play();
+  if(p&&p.catch)p.catch(function(err){
+    console.warn('Video play error:',err);
+    // Fallback: coba play lagi setelah 500ms
+    setTimeout(function(){
+      musicVideo.play().catch(function(){});
+    },500);
+  });
+}
 function pauseVideo(){if(!musicVideo)return;musicVideo.pause()}
+
+// Video auto init saat page load
+window.addEventListener('load',function(){
+  if(musicVideo){
+    musicVideo.muted=true;
+    musicVideo.volume=0;
+    musicVideo.play().then(function(){
+      // Kalau auto-play berhasil, langsung pause (nunggu audio)
+      musicVideo.pause();
+    }).catch(function(){
+      // Autoplay diblokir, biarkan nanti dipicu audio
+    });
+  }
+});
 
 function toggleMusic(){if(audio.paused){audio.play().then(function(){musicPlaying=true;playVideo();updatePlayIcons(true);updateMiniPlayer()}).catch(function(err){showToast('Gagal play: '+err.message)})}
 else{audio.pause();musicPlaying=false;pauseVideo();updatePlayIcons(false);updateMiniPlayer()}}
