@@ -130,7 +130,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .music-label{text-align:center;flex:1}
 .music-label .type{font-size:9.5px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#dc2626;margin-bottom:2px}
 .music-label .title{font-size:13px;font-weight:900;letter-spacing:1px;color:#fff;text-transform:uppercase}
-.music-cover-wrap{width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;margin-bottom:18px;background:#1a1a1a;border:3px solid #dc2626;box-shadow:0 0 25px rgba(220,38,38,.5)}
+.music-cover-wrap{width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;margin-bottom:18px;background:#1a1a1a;border:3px solid #dc2626;box-shadow:0 0 25px rgba(220,38,38,.5);position:relative}
+.music-cover-wrap video{width:100%;height:100%;object-fit:cover;display:block}
 .music-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
 .music-cover-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#dc2626,#7f1d1d);color:#fff}
 .music-cover-placeholder svg{width:35%;height:35%;fill:#fff;opacity:.6}
@@ -162,8 +163,6 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .music-play-big:active{transform:scale(.95)}
 .music-play-big svg{width:26px;height:26px;fill:#fff}
 .music-support{text-align:center;font-size:10.5px;font-weight:800;color:#dc2626;letter-spacing:1.5px;text-transform:uppercase;margin-top:6px}
-.music-video-box{width:100%;aspect-ratio:16/9;background:#000;border:3px solid #dc2626;border-radius:8px;overflow:hidden;margin-bottom:16px;box-shadow:0 0 20px rgba(220,38,38,.4)}
-.music-video-box video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 
 /* MINI PLAYER */
 .mini-player{position:fixed;left:12px;right:12px;bottom:78px;background:rgba(255,255,255,.97);border:3px solid #000;box-shadow:5px 5px 0 #dc2626;display:none;align-items:center;gap:10px;padding:8px 10px;z-index:290;backdrop-filter:blur(10px)}
@@ -429,16 +428,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 </button>
 </div>
 
-<div class="music-video-box">
-<video id="musicVideo" loop muted playsinline preload="auto" autoplay>
+<div class="music-cover-wrap" id="musicCoverWrap">
+<video id="musicVideo" loop muted playsinline preload="auto" autoplay poster="media/video_music.jpg">
 <source src="media/video_music.mp4" type="video/mp4" />
 </video>
-</div>
-
-<div class="music-cover-wrap">
-<div class="music-cover-placeholder" id="musicCoverPlaceholder">
-<svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1014 17V7h4V3h-6z"/></svg>
-</div>
 </div>
 
 <div class="music-meta">
@@ -688,7 +681,16 @@ var audio=document.getElementById('bgMusic');
 var musicVideo=document.getElementById('musicVideo');
 var musicPlaying=false,musicShuffle=false,musicRepeat=false;
 audio.volume=0.5;
-if(musicVideo){musicVideo.muted=true;musicVideo.volume=0;musicVideo.loop=true}
+
+if(musicVideo){
+musicVideo.muted=true;
+musicVideo.volume=0;
+musicVideo.loop=true;
+musicVideo.addEventListener('error',function(){
+var wrap=document.getElementById('musicCoverWrap');
+if(wrap){wrap.innerHTML='<img src="media/video_music.jpg" alt="cover" onerror="this.outerHTML=\'<div class=&quot;music-cover-placeholder&quot;><svg viewBox=&quot;0 0 24 24&quot;><path d=&quot;M12 3v10.55A4 4 0 1014 17V7h4V3h-6z&quot;/></svg></div>\'">';}
+});
+}
 
 function fmtTime(sec){if(!sec||isNaN(sec))return '0:00';var m=Math.floor(sec/60);var s=Math.floor(sec%60);return m+':'+(s<10?'0':'')+s}
 
@@ -724,16 +726,6 @@ audio.addEventListener('pause',function(){musicPlaying=false;updatePlayIcons(fal
 
 /* LOAD LIRIK */
 fetch('media/lyrics.txt').then(function(r){return r.text()}).then(function(t){var el=document.getElementById('musicLyrics');if(el&&t.trim())el.textContent=t}).catch(function(){});
-
-/* COVER ART */
-var coverImg=new Image();
-coverImg.src='media/music.jpg';
-coverImg.alt='Cover';
-coverImg.style.width='100%';
-coverImg.style.height='100%';
-coverImg.style.objectFit='cover';
-coverImg.style.display='block';
-coverImg.onload=function(){var ph=document.getElementById('musicCoverPlaceholder');if(ph)ph.replaceWith(coverImg)};
 
 /* INIT VIDEO */
 window.addEventListener('load',function(){
@@ -824,4 +816,4 @@ tbody.innerHTML=html;
 </script>
 
 </body>
-</html>
+  </html>
