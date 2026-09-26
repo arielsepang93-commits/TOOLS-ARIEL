@@ -55,12 +55,26 @@ function setLoading(on){document.getElementById('loading').classList.toggle('sho
 function resetForm(){document.getElementById('nickname').value='';document.getElementById('avatarFile').value='';document.getElementById('result').classList.remove('show')}
 
 async function uploadToCatbox(file){
-  var form=new FormData();
-  form.append('file',file,file.name||'avatar.png');
-  var r=await fetch('/api/tools?action=catboxupload',{method:'POST',body:form});
-  var data=await r.json();
-  if(!data.success||!data.url)throw new Error(data.message||'Gagal upload ke Catbox');
-  return data.url;
+  var base64=await new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){resolve(reader.result.split(',')[1])};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+
+  var res=await fetch('/api/tools?action=catboxupload',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      filename:file.name||'file.png',
+      contentType:file.type||'image/png',
+      data:base64
+    })
+  });
+
+  var result=await res.json();
+  if(!result.success||!result.url)throw new Error(result.message||'Upload gagal');
+  return result.url;
 }
 
 async function generate(){
