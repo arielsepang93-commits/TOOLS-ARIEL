@@ -51,17 +51,35 @@ function setLoading(on){document.getElementById('loading').classList.toggle('sho
 function escapeHtml(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function resetForm(){document.getElementById('fileInput').value='';document.getElementById('result').classList.remove('show')}
 
+async function uploadToCatbox(file){
+  var base64=await new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){resolve(reader.result.split(',')[1])};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+
+  var res=await fetch('/api/tools?action=catboxupload',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      filename:file.name||'file.png',
+      contentType:file.type||'image/png',
+      data:base64
+    })
+  });
+
+  var result=await res.json();
+  if(!result.success||!result.url)throw new Error(result.message||'Upload gagal');
+  return result.url;
+}
+
 async function uploadGambar(){
   var file=document.getElementById('fileInput').files[0];
   if(!file){showToast('Pilih gambar dulu!');return}
   setLoading(true);document.getElementById('result').classList.remove('show');
   try{
-    var form=new FormData();
-    form.append('file',file,file.name||'image.png');
-    var r=await fetch('/api/tools?action=catboxupload',{method:'POST',body:form});
-    var data=await r.json();
-    if(!data.success||!data.url)throw new Error(data.message||'Upload gagal');
-    var url=data.url;
+    var url=await uploadToCatbox(file);
     document.getElementById('resultCard').innerHTML=
       '<img class="center-img" src="'+escapeHtml(url)+'" alt="Result" style="max-height:220px;object-fit:contain;background:#111;margin-bottom:12px;">'+
       '<div style="display:flex;gap:8px;align-items:center;border:3px solid #000;background:#fff;padding:10px 12px;position:relative;z-index:2;">'+
