@@ -691,15 +691,13 @@ async function handleSpotifySearch(req, res) {
 
 
 // ============================================================
-// ===== [MARKER-IQC] IQC GENERATOR =====
+// ===== [MARKER-IQC] IQC GENERATOR (endpoint baru) =====
 // ============================================================
 async function handleIqc(req, res) {
-  const { text, provider, jam, baterai } = req.query;
-  const apiPath = '/maker/v1/iqc?' +
-    'text=' + encodeURIComponent(text || 'Hai') +
-    '&provider=' + encodeURIComponent(provider || 'Axis') +
-    '&jam=' + encodeURIComponent(jam || '12') +
-    '&baterai=' + encodeURIComponent(baterai || '65');
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ success: false, message: 'Parameter text wajib diisi' });
+
+  const apiPath = '/maker/iqc?text=' + encodeURIComponent(text);
   return proxyNexrayImage(res, apiPath, 25000);
 }
 // ===== [MARKER-IQC-END] =====
@@ -803,18 +801,12 @@ async function handleCatboxUpload(req, res) {
       return res.status(400).json({ success: false, message: 'Data file wajib diisi' });
     }
 
-    // Ubah base64 jadi Buffer
     const buffer = Buffer.from(data, 'base64');
 
-    // Cek ukuran (biar gak kebuang waktu kalau gede banget)
     if (buffer.length > 5 * 1024 * 1024) {
-      return res.status(413).json({
-        success: false,
-        message: 'File terlalu besar (max 5MB)'
-      });
+      return res.status(413).json({ success: false, message: 'File terlalu besar (max 5MB)' });
     }
 
-    // Kirim ke Catbox via FormData server-to-server
     const blob = new Blob([buffer], { type: contentType || 'application/octet-stream' });
     const form = new FormData();
     form.append('reqtype', 'fileupload');
@@ -829,11 +821,7 @@ async function handleCatboxUpload(req, res) {
     const url = await catboxRes.text();
 
     if (!url || !url.startsWith('http')) {
-      return res.status(500).json({
-        success: false,
-        message: 'Catbox gagal upload',
-        raw: url.substring(0, 200)
-      });
+      return res.status(500).json({ success: false, message: 'Catbox gagal upload', raw: url.substring(0, 200) });
     }
 
     return res.status(200).json({ success: true, url: url.trim() });
