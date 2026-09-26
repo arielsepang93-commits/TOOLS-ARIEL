@@ -22,46 +22,65 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36',
-        'Accept': 'application/json'
+        'Accept': 'application/json, text/plain, */*'
       },
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(25000)
     });
 
     const text = await response.text();
+
+    if (text.trim().startsWith('<')) {
+      return res.status(502).json({
+        success: false,
+        message: 'Endpoint sylvatica tidak merespons dengan benar.'
+      });
+    }
+
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
-      return res.status(500).json({ success: false, message: 'Response bukan JSON', raw: text });
+      return res.status(502).json({
+        success: false,
+        message: 'API sylvatica bermasalah.',
+        raw: text.substring(0, 200)
+      });
     }
 
     if (data.status === false) {
       return res.status(200).json({
         success: false,
-        message: data.message || 'Gagal memproses'
+        message: data.message || data.msg || 'API key habis limit atau nomor tidak valid'
       });
     }
 
     const result = data.result || data.data || data;
 
+    if (!result || !result.number) {
+      return res.status(200).json({
+        success: false,
+        message: 'Data tidak ditemukan. Mungkin API key expired.'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       creator: 'Ariel',
       result: {
-        banned: result.banned,
+        banned: result.banned === true,
         info: {
-          device: result.info ? result.info.device : 'Unknown',
-          email: result.info ? result.info.email : 'Unknown'
+          device: (result.info && result.info.device) ? result.info.device : 'Unknown',
+          email: (result.info && result.info.email) ? result.info.email : 'Unknown'
         },
         number: result.number,
-        status: result.status
+        status: result.status || 'Unknown'
       }
     });
 
   } catch (error) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-      return res.status(504).json({ success: false, message: 'Request timeout' });
+      return res.status(504).json({ success: false, message: 'Request timeout.' });
     }
     return res.status(500).json({ success: false, message: 'Gagal: ' + error.message });
   }
-} 
+}
